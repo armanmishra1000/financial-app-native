@@ -11,7 +11,7 @@ import { AccountDetails } from '../../src/components/account-details';
 import { formatCurrency } from '../../src/lib/utils';
 import { Transaction } from '../../src/lib/data';
 import { isInvestmentLocked, formatLockExpiry } from '../../src/lib/investment-utils';
-import { convertFromUSD } from '../../src/lib/currency-utils';
+import { convertFromUSD, convertToUSD } from '../../src/lib/currency-utils';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
 type ViewMode = 'Wallet' | 'Retire';
@@ -80,8 +80,16 @@ export default function WalletScreen() {
       return;
     }
 
-    if (dialogOpen === 'Withdrawal' && numericAmount > user.balance) {
-      Alert.alert("Insufficient Funds", "You don't have enough balance for this withdrawal.");
+    // Convert input amount to USD for storage and validation
+    const amountInUSD = user.displayCurrency === 'USD' 
+      ? numericAmount 
+      : convertToUSD(numericAmount, user.displayCurrency);
+
+    if (dialogOpen === 'Withdrawal' && amountInUSD > user.balance) {
+      Alert.alert(
+        "Insufficient Funds", 
+        `You don't have enough balance. Available: ${formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}`
+      );
       return;
     }
 
@@ -109,7 +117,7 @@ export default function WalletScreen() {
     setTimeout(() => {
       addTransaction({
         type: dialogOpen,
-        amount: dialogOpen === 'Deposit' ? numericAmount : -numericAmount,
+        amount: dialogOpen === 'Deposit' ? amountInUSD : -amountInUSD,
         description: dialogOpen === 'Deposit' ? 'Bank Transfer' : 'To Bank Account',
       });
 
@@ -117,7 +125,7 @@ export default function WalletScreen() {
       handleDialogClose();
       Alert.alert(
         "Success",
-        `${dialogOpen} of ${formatCurrency(convertFromUSD(numericAmount, user.displayCurrency), user.displayCurrency)} completed successfully!`
+        `${dialogOpen} of ${formatCurrency(numericAmount, user.displayCurrency)} completed successfully!`
       );
     }, 1000);
   };

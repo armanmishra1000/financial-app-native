@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { useAppContext } from '../context/app-context';
 import { formatCurrency } from '../lib/utils';
+import { convertToUSD, convertFromUSD } from '../lib/currency-utils';
 // import { toast } from 'sonner-native';
 
 interface TransactionDialogProps {
@@ -28,7 +29,12 @@ export function TransactionDialog({ open, onOpenChange, type }: TransactionDialo
       return;
     }
 
-    if (type === 'Withdrawal' && numericAmount > user.balance) {
+    // Convert input amount to USD for storage and validation
+    const amountInUSD = user.displayCurrency === 'USD' 
+      ? numericAmount 
+      : convertToUSD(numericAmount, user.displayCurrency);
+
+    if (type === 'Withdrawal' && amountInUSD > user.balance) {
       // toast.error("Insufficient funds for this withdrawal.");
       setIsLoading(false);
       return;
@@ -37,7 +43,7 @@ export function TransactionDialog({ open, onOpenChange, type }: TransactionDialo
     setTimeout(() => {
       addTransaction({
         type,
-        amount: type === 'Deposit' ? numericAmount : -numericAmount,
+        amount: type === 'Deposit' ? amountInUSD : -amountInUSD,
         description: type === 'Deposit' ? 'Bank Transfer' : 'To Bank Account',
       });
 
@@ -59,13 +65,13 @@ export function TransactionDialog({ open, onOpenChange, type }: TransactionDialo
       <ModalHeader>
         <ModalTitle>{type} Funds</ModalTitle>
         <ModalDescription>
-          Enter the amount you wish to {type.toLowerCase()}. Your current balance is {formatCurrency(user.balance, user.currency)}.
+          Enter the amount you wish to {type.toLowerCase()}. Your current balance is {formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}.
         </ModalDescription>
       </ModalHeader>
       <ModalContent>
         <View style={styles.content}>
           <Input
-            placeholder={`Amount in ${user.currency}`}
+            placeholder={`Amount in ${user.displayCurrency}`}
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
