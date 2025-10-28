@@ -6,16 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
 import { TransactionItem } from '../../src/components/transaction-item';
+import { SegmentedControl } from '../../src/components/ui/segmented-control';
+import { AccountDetails } from '../../src/components/account-details';
 import { formatCurrency } from '../../src/lib/utils';
 import { Transaction } from '../../src/lib/data';
 import { isInvestmentLocked, formatLockExpiry } from '../../src/lib/investment-utils';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
+type ViewMode = 'Wallet' | 'Retire';
 
 export default function WalletScreen() {
   const { user, transactions, addTransaction, investments } = useAppContext();
   const [dialogOpen, setDialogOpen] = React.useState<DialogType>(null);
   const [filter, setFilter] = React.useState<Transaction['type'] | 'All'>('All');
+  const [viewMode, setViewMode] = React.useState<ViewMode>('Wallet');
   const [amount, setAmount] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -38,11 +42,22 @@ export default function WalletScreen() {
   }, []);
 
   const filteredTransactions = React.useMemo(() => {
-    if (filter === 'All') {
-      return transactions;
+    let filtered = transactions;
+    
+    // If in Retire mode, only show Deposit/Withdrawal
+    if (viewMode === 'Retire') {
+      filtered = transactions.filter(tx => 
+        tx.type === 'Deposit' || tx.type === 'Withdrawal'
+      );
+    } else {
+      // Wallet mode: use filter state
+      if (filter !== 'All') {
+        filtered = transactions.filter(tx => tx.type === filter);
+      }
     }
-    return transactions.filter(tx => tx.type === filter);
-  }, [transactions, filter]);
+    
+    return filtered;
+  }, [transactions, filter, viewMode]);
 
   const handleDialogOpen = (type: DialogType) => {
     setDialogOpen(type);
@@ -107,42 +122,59 @@ export default function WalletScreen() {
   };
 
   const filterOptions: (Transaction['type'] | 'All')[] = ['All', 'Deposit', 'Withdrawal', 'Investment', 'Payout'];
+  const viewModeOptions: ViewMode[] = ['Wallet', 'Retire'];
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.space}>
           <View style={styles.header}>
-            <Text style={styles.title}>Wallet</Text>
-            <Text style={styles.subtitle}>Manage your funds and transactions.</Text>
+            <Text style={styles.title}>{viewMode === 'Wallet' ? 'Wallet' : 'Retire'}</Text>
+            <Text style={styles.subtitle}>
+              {viewMode === 'Wallet' ? 'Manage your funds and transactions.' : 'View your retirement account details and transaction history.'}
+            </Text>
           </View>
 
+          {/* Segmented Control */}
+          <SegmentedControl
+            value={viewMode}
+            onChange={(value) => setViewMode(value as ViewMode)}
+            options={viewModeOptions}
+          />
+
+        {/* Account Details - Only in Retire mode */}
+        {viewMode === 'Retire' && <AccountDetails />}
+
+        {/* Balance Card */}
         <Card>
           <CardHeader>
             <Text style={styles.balanceLabel}>Total Balance</Text>
             <Text style={styles.balanceAmount}>{formatCurrency(user.balance, user.currency)}</Text>
           </CardHeader>
           <CardContent>
-            <View style={styles.actionButtons}>
-              <Button 
-                variant="outline"
-                size="lg"
-                onPress={() => handleDialogOpen('Deposit')}
-                style={styles.actionButton}
-              >
-                <ArrowDownToLine size={16} color="#374151" />
-                <Text style={styles.actionButtonText}>Deposit</Text>
-              </Button>
-              <Button 
-                variant="outline"
-                size="lg"
-                onPress={() => handleDialogOpen('Withdrawal')}
-                style={styles.actionButton}
-              >
-                <ArrowUpFromLine size={16} color="#374151" />
-                <Text style={styles.actionButtonText}>Withdraw</Text>
-              </Button>
-            </View>
+            {/* Action buttons - Only in Wallet mode */}
+            {viewMode === 'Wallet' && (
+              <View style={styles.actionButtons}>
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  onPress={() => handleDialogOpen('Deposit')}
+                  style={styles.actionButton}
+                >
+                  <ArrowDownToLine size={16} color="#374151" />
+                  <Text style={styles.actionButtonText}>Deposit</Text>
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  onPress={() => handleDialogOpen('Withdrawal')}
+                  style={styles.actionButton}
+                >
+                  <ArrowUpFromLine size={16} color="#374151" />
+                  <Text style={styles.actionButtonText}>Withdraw</Text>
+                </Button>
+              </View>
+            )}
           </CardContent>
         </Card>
 
@@ -151,29 +183,32 @@ export default function WalletScreen() {
             <CardTitle>Transaction History</CardTitle>
           </CardHeader>
           <CardContent>
-            <View style={styles.filterSection}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-                <View style={styles.filterButtons}>
-                  {filterOptions.map(option => (
-                    <TouchableOpacity
-                      key={option}
-                      style={[
-                        styles.filterButton,
-                        filter === option && styles.filterButtonActive
-                      ]}
-                      onPress={() => setFilter(option)}
-                    >
-                      <Text style={[
-                        styles.filterButtonText,
-                        filter === option && styles.filterButtonTextActive
-                      ]}>
-                        {option}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+            {/* Filter buttons - Only in Wallet mode */}
+            {viewMode === 'Wallet' && (
+              <View style={styles.filterSection}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                  <View style={styles.filterButtons}>
+                    {filterOptions.map(option => (
+                      <TouchableOpacity
+                        key={option}
+                        style={[
+                          styles.filterButton,
+                          filter === option && styles.filterButtonActive
+                        ]}
+                        onPress={() => setFilter(option)}
+                      >
+                        <Text style={[
+                          styles.filterButtonText,
+                          filter === option && styles.filterButtonTextActive
+                        ]}>
+                          {option}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
             
             {filteredTransactions.length > 0 ? (
               <View style={styles.transactionsList}>
@@ -190,7 +225,10 @@ export default function WalletScreen() {
                 </View>
                 <Text style={styles.emptyStateTitle}>No Transactions Found</Text>
                 <Text style={styles.emptyStateDescription}>
-                  There are no transactions that match your selected filter.
+                  {viewMode === 'Retire' 
+                    ? 'There are no deposit or withdrawal transactions in your retirement account.'
+                    : 'There are no transactions that match your selected filter.'
+                  }
                 </Text>
               </View>
             )}
@@ -198,12 +236,14 @@ export default function WalletScreen() {
         </Card>
       </View>
 
-      <Modal
-        visible={!!dialogOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleDialogClose}
-      >
+      {/* Modal - Only show in Wallet mode */}
+      {dialogOpen && viewMode === 'Wallet' && (
+        <Modal
+          visible={!!dialogOpen}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={handleDialogClose}
+        >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{dialogOpen} Funds</Text>
@@ -241,6 +281,7 @@ export default function WalletScreen() {
           </View>
         </View>
       </Modal>
+      )}
     </ScrollView>
   </Animated.View>
 );
