@@ -12,6 +12,8 @@ export type Plan = {
   name: string;
   duration_days: number;
   roi_percent: number;
+  bond_percent: number;
+  platform_percent: number;
   min_deposit: number;
 };
 
@@ -56,10 +58,10 @@ export const transactions: Transaction[] = [
 ];
 
 export const plans: Plan[] = [
-    { id: "p1", name: "1 Week Plan", duration_days: 7, roi_percent: 2.0, min_deposit: 100 },
-    { id: "p2", name: "1 Month Plan", duration_days: 30, roi_percent: 10.0, min_deposit: 500 },
-    { id: "p3", name: "6 Month Plan", duration_days: 180, roi_percent: 40.0, min_deposit: 1000 },
-    { id: "p4", name: "1 Year Plan", duration_days: 365, roi_percent: 90.0, min_deposit: 2500 }
+    { id: "p1", name: "1 Week Plan", duration_days: 7, roi_percent: 2.0, bond_percent: 1.2, platform_percent: 0.8, min_deposit: 100 },
+    { id: "p2", name: "1 Month Plan", duration_days: 30, roi_percent: 10.0, bond_percent: 6.0, platform_percent: 4.0, min_deposit: 500 },
+    { id: "p3", name: "6 Month Plan", duration_days: 180, roi_percent: 40.0, bond_percent: 24.0, platform_percent: 16.0, min_deposit: 1000 },
+    { id: "p4", name: "1 Year Plan", duration_days: 365, roi_percent: 90.0, bond_percent: 54.0, platform_percent: 36.0, min_deposit: 2500 }
 ];
 
 export const notifications: Notification[] = [

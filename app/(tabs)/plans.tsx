@@ -7,6 +7,7 @@ import { Button } from '../../src/components/ui/button';
 import { Badge } from '../../src/components/ui/badge';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
+import { calculateDailyRate, formatDailyRate, getROIBreakdown } from '../../src/lib/investment-utils';
 
 interface PlanCardProps {
   plan: Plan;
@@ -15,6 +16,9 @@ interface PlanCardProps {
 }
 
 const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
+  const dailyRate = calculateDailyRate(plan.roi_percent);
+  const roiBreakdown = getROIBreakdown(plan.roi_percent);
+  
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <Card style={recommended ? styles.planCardRecommended : styles.planCard}>
@@ -22,7 +26,7 @@ const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderLeft}>
               <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>Grow your capital steadily.</CardDescription>
+              <CardDescription>Daily compound interest growth</CardDescription>
             </View>
             {recommended && <Badge>Recommended</Badge>}
           </View>
@@ -30,8 +34,23 @@ const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
         <CardContent style={styles.cardContent}>
           <View style={styles.roiSection}>
             <Text style={styles.roiPercentage}>{plan.roi_percent}%</Text>
-            <Text style={styles.roiLabel}>ROI</Text>
+            <Text style={styles.roiLabel}>APY</Text>
+            <Text style={styles.dailyRate}>{formatDailyRate(dailyRate)} daily</Text>
           </View>
+          
+          {/* ROI Breakdown */}
+          <View style={styles.breakdownSection}>
+            <Text style={styles.breakdownTitle}>Returns Breakdown</Text>
+            <View style={styles.breakdownRow}>
+              <Text style={styles.breakdownLabel}>National Bond</Text>
+              <Text style={styles.breakdownValue}>{roiBreakdown.bond_percent}%</Text>
+            </View>
+            <View style={styles.breakdownRow}>
+              <Text style={styles.breakdownLabel}>Platform Bonus</Text>
+              <Text style={styles.breakdownValue}>+{roiBreakdown.platform_percent}%</Text>
+            </View>
+          </View>
+          
           <View style={styles.detailsSection}>
             <View style={styles.detailRow}>
               <Calendar size={16} color="#6b7280" />
@@ -40,7 +59,7 @@ const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
             <View style={styles.detailRow}>
               <DollarSign size={16} color="#6b7280" />
               <Text style={styles.detailText}>
-                Minimum Deposit: <Text style={styles.detailTextBold}>{formatCurrency(plan.min_deposit)}</Text>
+                Minimum: <Text style={styles.detailTextBold}>{formatCurrency(plan.min_deposit)}</Text>
               </Text>
             </View>
           </View>
@@ -210,5 +229,38 @@ const styles = StyleSheet.create({
   },
   buttonTextSecondary: {
     color: '#3b82f6',
+  },
+  dailyRate: {
+    fontSize: 14,
+    color: '#059669',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  breakdownSection: {
+    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    gap: 6,
+    marginVertical: 12,
+  },
+  breakdownTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3b82f6',
+    marginBottom: 2,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  breakdownLabel: {
+    fontSize: 11,
+    color: '#6b7280',
+  },
+  breakdownValue: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#111827',
   },
 });

@@ -8,10 +8,11 @@ import { Input } from '../../src/components/ui/input';
 import { Select } from '../../src/components/ui/select';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
+import { calculateDailyRate, calculateExpectedReturn, formatDailyRate, getROIBreakdown } from '../../src/lib/investment-utils';
 
 export default function InvestScreen() {
   const router = useRouter();
-  const { user, addTransaction } = useAppContext();
+  const { user, addTransaction, createInvestment } = useAppContext();
 
   const [selectedPlan, setSelectedPlan] = React.useState<Plan | undefined>(plans[1]);
   const [amount, setAmount] = React.useState<string>("500");
@@ -44,19 +45,18 @@ export default function InvestScreen() {
     }
   }, []);
 
-  const calculatedReturn = React.useMemo(() => {
-    if (!selectedPlan || !amount) return 0;
+  const investmentCalculation = React.useMemo(() => {
+    if (!selectedPlan || !amount) return null;
     const numericAmount = parseFloat(amount);
-    if (isNaN(numericAmount)) return 0;
-    return numericAmount * (selectedPlan.roi_percent / 100);
+    if (isNaN(numericAmount)) return null;
+    
+    return calculateExpectedReturn(numericAmount, selectedPlan.roi_percent, selectedPlan.duration_days);
   }, [selectedPlan, amount]);
 
-  const totalPayout = React.useMemo(() => {
-    if (!amount) return 0;
-    const numericAmount = parseFloat(amount);
-    if (isNaN(numericAmount)) return 0;
-    return numericAmount + calculatedReturn;
-  }, [amount, calculatedReturn]);
+  const roiBreakdown = React.useMemo(() => {
+    if (!selectedPlan) return null;
+    return getROIBreakdown(selectedPlan.roi_percent);
+  }, [selectedPlan]);
 
   const handleInvest = () => {
     const numericAmount = parseFloat(amount);
@@ -99,6 +99,15 @@ export default function InvestScreen() {
 
     // Simulate processing time
     setTimeout(() => {
+      // Create the investment record
+      createInvestment({
+        planId: selectedPlan!.id,
+        planName: selectedPlan!.name,
+        amount: numericAmount,
+        currency: user.currency,
+      });
+
+      // Create the transaction for the initial investment
       addTransaction({
         type: 'Investment',
         amount: -numericAmount,
@@ -109,7 +118,7 @@ export default function InvestScreen() {
       
       Alert.alert(
         "Investment Successful!",
-        `Your investment of ${formatCurrency(numericAmount, user.currency)} has been processed.`,
+        `Your investment of ${formatCurrency(numericAmount, user.currency)} in ${selectedPlan!.name} has been processed. You'll start earning daily compound interest!`,
         [
           {
             text: "OK",
@@ -176,27 +185,64 @@ export default function InvestScreen() {
 
               <View style={styles.summarySection}>
                 <Text style={styles.summaryTitle}>Summary</Text>
+                
+                {/* Investment Details */}
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Your Investment</Text>
                   <Text style={styles.summaryValue}>
                     {formatCurrency(parseFloat(amount) || 0, user.currency)}
                   </Text>
                 </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>
-                    Estimated Profit ({selectedPlan?.roi_percent}%)
-                  </Text>
-                  <Text style={styles.profitValue}>
-                    +{formatCurrency(calculatedReturn, user.currency)}
-                  </Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryRow}>
-                  <Text style={styles.totalLabel}>Total Payout</Text>
-                  <Text style={styles.totalValue}>
-                    {formatCurrency(totalPayout, user.currency)}
-                  </Text>
-                </View>
+                
+                {/* ROI Breakdown */}
+                {roiBreakdown && (
+                  <View style={styles.breakdownSection}>
+                    <Text style={styles.breakdownTitle}>ROI Breakdown</Text>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.breakdownLabel}>National Bond</Text>
+                      <Text style={styles.breakdownValue}>{roiBreakdown.bond_percent}%</Text>
+                    </View>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.breakdownLabel}>Platform Bonus</Text>
+                      <Text style={styles.breakdownValue}>+{roiBreakdown.platform_percent}%</Text>
+                    </View>
+                    <View style={styles.breakdownDivider} />
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.breakdownTotalLabel}>Total APY</Text>
+                      <Text style={styles.breakdownTotalValue}>{roiBreakdown.total_percent}%</Text>
+                    </View>
+                  </View>
+                )}
+                
+                {/* Compound Interest Details */}
+                {investmentCalculation && (
+                  <View style={styles.compoundSection}>
+                    <Text style={styles.compoundTitle}>Expected Returns</Text>
+                    <View style={styles.compoundRow}>
+                      <Text style={styles.compoundLabel}>Daily Rate</Text>
+                      <Text style={styles.compoundValue}>{formatDailyRate(investmentCalculation.dailyRate)}</Text>
+                    </View>
+                    <View style={styles.compoundRow}>
+                      <Text style={styles.compoundLabel}>Daily Earnings</Text>
+                      <Text style={styles.compoundValue}>
+                        +{formatCurrency(investmentCalculation.dailyEarnings, user.currency)}
+                      </Text>
+                    </View>
+                    <View style={styles.compoundRow}>
+                      <Text style={styles.compoundLabel}>Total Growth ({selectedPlan?.duration_days} days)</Text>
+                      <Text style={styles.profitValue}>
+                        +{formatCurrency(investmentCalculation.profit, user.currency)}
+                      </Text>
+                    </View>
+                    <View style={styles.summaryDivider} />
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.totalLabel}>Final Value</Text>
+                      <Text style={styles.totalValue}>
+                        {formatCurrency(investmentCalculation.total, user.currency)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </CardContent>
           </Card>
@@ -323,5 +369,71 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     marginTop: 8,
+  },
+  breakdownSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    borderRadius: 8,
+    gap: 8,
+  },
+  breakdownTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3b82f6',
+    marginBottom: 4,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  breakdownValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  breakdownDivider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginVertical: 4,
+  },
+  breakdownTotalLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3b82f6',
+  },
+  breakdownTotalValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3b82f6',
+  },
+  compoundSection: {
+    marginTop: 16,
+    gap: 8,
+  },
+  compoundTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#059669',
+    marginBottom: 4,
+  },
+  compoundRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compoundLabel: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  compoundValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#059669',
   },
 });

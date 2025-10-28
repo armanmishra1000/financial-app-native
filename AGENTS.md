@@ -1,4 +1,4 @@
-- Always check lint and build errors and fix all after code modification or file created.
+- Always check npx tsc --noEmit and build errors and fix all after code modification or file created.
 
 - never use `className` which doesn't exist in React Native (only works with NativeWind)
 

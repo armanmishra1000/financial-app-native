@@ -1,12 +1,24 @@
 import * as React from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { user as initialUser, transactions as initialTransactions, notifications as initialNotifications, paymentMethods as initialPaymentMethods, Transaction, Notification, PaymentMethod, AuthUser, mockUsers } from "../lib/data";
+import { user as initialUser, transactions as initialTransactions, notifications as initialNotifications, paymentMethods as initialPaymentMethods, Transaction, Notification, PaymentMethod, AuthUser, mockUsers, Plan, plans } from "../lib/data";
+import { calculateDailyRate, calculateCurrentValue, calculateDaysRemaining, calculateProgress } from "../lib/investment-utils";
 
 interface User {
   name: string;
   balance: number;
   currency: string;
 }
+
+export type Investment = {
+  id: string;
+  planId: string;
+  planName: string;
+  amount: number;
+  startDate: string; // ISO string
+  expectedEndDate: string; // ISO string
+  status: 'Active' | 'Completed' | 'Cancelled';
+  currency: string;
+};
 
 interface AppContextState {
   user: User;
@@ -18,6 +30,9 @@ interface AppContextState {
   paymentMethods: PaymentMethod[];
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void;
   deletePaymentMethod: (methodId: string) => void;
+  investments: Investment[];
+  createInvestment: (investment: Omit<Investment, 'id' | 'startDate' | 'expectedEndDate' | 'status'>) => void;
+  getInvestmentCurrentValue: (investmentId: string) => number;
   logout: () => void;
   isHydrated: boolean;
   // Authentication state
@@ -45,6 +60,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = React.useState<Transaction[]>(initialTransactions);
   const [notifications, setNotifications] = React.useState<Notification[]>(initialNotifications);
   const [paymentMethods, setPaymentMethods] = React.useState<PaymentMethod[]>(initialPaymentMethods);
+  const [investments, setInvestments] = React.useState<Investment[]>([]);
   const [isHydrated, setIsHydrated] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [authToken, setAuthToken] = React.useState<string | null>(null);
@@ -55,12 +71,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const storedTransactions = await getStoredData('app_transactions', initialTransactions);
       const storedNotifications = await getStoredData('app_notifications', initialNotifications);
       const storedPaymentMethods = await getStoredData('app_payment_methods', initialPaymentMethods);
+      const storedInvestments = await getStoredData('app_investments', []);
       const storedAuthToken = await getStoredData('auth_token', null);
       
       setUser(storedUser);
       setTransactions(storedTransactions);
       setNotifications(storedNotifications);
       setPaymentMethods(storedPaymentMethods);
+      setInvestments(storedInvestments);
       setAuthToken(storedAuthToken);
       setIsAuthenticated(!!storedAuthToken);
       setIsHydrated(true);
@@ -77,6 +95,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await AsyncStorage.setItem('app_transactions', JSON.stringify(transactions));
         await AsyncStorage.setItem('app_notifications', JSON.stringify(notifications));
         await AsyncStorage.setItem('app_payment_methods', JSON.stringify(paymentMethods));
+        await AsyncStorage.setItem('app_investments', JSON.stringify(investments));
         await AsyncStorage.setItem('auth_token', JSON.stringify(authToken));
       } catch (error) {
         console.error("Error writing to AsyncStorage:", error);
@@ -84,7 +103,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     storeData();
-  }, [user, transactions, notifications, paymentMethods, authToken, isHydrated]);
+  }, [user, transactions, notifications, paymentMethods, investments, authToken, isHydrated]);
+
+  // Run investment growth simulation when app loads
+  React.useEffect(() => {
+    if (isHydrated && investments.length > 0) {
+      simulateInvestmentGrowth();
+    }
+  }, [isHydrated, investments.length]);
 
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => {
     const newTransaction: Transaction = {
@@ -116,6 +142,106 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
   };
 
+  const createInvestment = (investment: Omit<Investment, 'id' | 'startDate' | 'expectedEndDate' | 'status'>) => {
+    const now = new Date();
+    const startDate = now.toISOString();
+    const expectedEndDate = new Date(now.getTime() + (investment.planId === 'p1' ? 7 : 
+                                                      investment.planId === 'p2' ? 30 :
+                                                      investment.planId === 'p3' ? 180 : 365) * 24 * 60 * 60 * 1000).toISOString();
+    
+    const newInvestment: Investment = {
+      ...investment,
+      id: `inv${investments.length + 1}`,
+      startDate,
+      expectedEndDate,
+      status: 'Active',
+    };
+    
+    setInvestments(prev => [...prev, newInvestment]);
+  };
+
+  const getInvestmentCurrentValue = (investmentId: string): number => {
+    const investment = investments.find(inv => inv.id === investmentId);
+    if (!investment || investment.status !== 'Active') return 0;
+    
+    // Find the plan to get ROI percentage
+    const plan = plans.find((p: Plan) => p.id === investment.planId);
+    if (!plan) return investment.amount;
+    
+    const dailyRate = calculateDailyRate(plan.roi_percent);
+    return calculateCurrentValue(investment.amount, dailyRate, investment.startDate);
+  };
+
+  const simulateInvestmentGrowth = async () => {
+    if (!isHydrated || investments.length === 0) return;
+    
+    try {
+      // Get last app open date
+      const lastOpenDate = await getStoredData('last_open_date', null);
+      const now = new Date();
+      
+      // Process each active investment
+      let totalEarnings = 0;
+      const updatedInvestments = investments.map(investment => {
+        if (investment.status !== 'Active') return investment;
+        
+        const plan = plans.find((p: Plan) => p.id === investment.planId);
+        if (!plan) return investment;
+        
+        const dailyRate = calculateDailyRate(plan.roi_percent);
+        const currentValue = calculateCurrentValue(investment.amount, dailyRate, investment.startDate);
+        const earnings = currentValue - investment.amount;
+        
+        // Check if investment has matured
+        const daysRemaining = calculateDaysRemaining(investment.startDate, plan.duration_days);
+        if (daysRemaining === 0) {
+          // Investment matured, create payout transaction
+          addTransaction({
+            type: 'Payout',
+            amount: earnings,
+            description: `${investment.planName} - Matured`,
+          });
+          
+          return { ...investment, status: 'Completed' as const };
+        }
+        
+        totalEarnings += earnings;
+        return investment;
+      });
+      
+      // Update investments
+      setInvestments(updatedInvestments);
+      
+      // Add earnings to balance if there are any and time has passed
+      if (totalEarnings > 0 && lastOpenDate) {
+        const lastOpen = new Date(lastOpenDate);
+        const hoursPassed = (now.getTime() - lastOpen.getTime()) / (1000 * 60 * 60);
+        
+        // Only add earnings if at least 1 hour has passed (to prevent constant updates)
+        if (hoursPassed >= 1) {
+          setUser(prevUser => ({
+            ...prevUser,
+            balance: prevUser.balance + totalEarnings,
+          }));
+          
+          // Create a transaction for the earnings
+          if (totalEarnings > 0.01) { // Only create transaction for meaningful earnings
+            addTransaction({
+              type: 'Payout',
+              amount: totalEarnings,
+              description: 'Investment Earnings',
+            });
+          }
+        }
+      }
+      
+      // Store current date as last open date
+      await AsyncStorage.setItem('last_open_date', now.toISOString());
+    } catch (error) {
+      console.error('Error simulating investment growth:', error);
+    }
+  };
+
   const logout = async () => {
     try {
       await AsyncStorage.clear();
@@ -123,6 +249,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setTransactions(initialTransactions);
       setNotifications(initialNotifications);
       setPaymentMethods(initialPaymentMethods);
+      setInvestments([]);
       setAuthToken(null);
       setIsAuthenticated(false);
     } catch (error) {
@@ -219,6 +346,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     paymentMethods, 
     addPaymentMethod, 
     deletePaymentMethod, 
+    investments,
+    createInvestment,
+    getInvestmentCurrentValue,
+    simulateInvestmentGrowth,
     logout, 
     isHydrated,
     isAuthenticated,

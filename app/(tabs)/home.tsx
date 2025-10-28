@@ -11,11 +11,13 @@ import { TransactionItem } from '../../src/components/transaction-item';
 import { ActionCard } from '../../src/components/action-card';
 import { BalanceChart } from '../../src/components/balance-chart';
 import { formatCurrency } from '../../src/lib/utils';
+import { plans, Plan } from '../../src/lib/data';
 import { HomePageSkeleton } from '../../src/components/home-page-skeleton';
-import { Briefcase, BarChart2, Wallet } from 'lucide-react-native';
+import { Briefcase, BarChart2, Wallet, TrendingUp, Clock } from 'lucide-react-native';
+import { calculateCurrentValue, calculateDailyRate, calculateDaysRemaining, calculateProgress } from '../../src/lib/investment-utils';
 
 export default function HomeScreen() {
-  const { user, transactions, isHydrated } = useAppContext();
+  const { user, transactions, investments, getInvestmentCurrentValue, isHydrated } = useAppContext();
   const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = React.useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -45,6 +47,73 @@ export default function HomeScreen() {
     .split(" ")
     .map((n) => n[0])
     .join("");
+
+  // Active Investment Card Component
+  const ActiveInvestmentCard = ({ investment }: { investment: any }) => {
+    const currentValue = getInvestmentCurrentValue(investment.id);
+    const profit = currentValue - investment.amount;
+    const profitPercent = ((profit / investment.amount) * 100);
+    
+    // Get plan details
+    const plan = plans.find((p: Plan) => p.id === investment.planId);
+    const daysRemaining = plan ? calculateDaysRemaining(investment.startDate, plan.duration_days) : 0;
+    const progress = plan ? calculateProgress(investment.startDate, plan.duration_days) : 0;
+    
+    return (
+      <Card style={styles.investmentCard}>
+        <CardContent style={styles.investmentCardContent}>
+          <View style={styles.investmentHeader}>
+            <View>
+              <Text style={styles.investmentTitle}>{investment.planName}</Text>
+              <Text style={styles.investmentSubtitle}>
+                Started: {new Date(investment.startDate).toLocaleDateString()}
+              </Text>
+            </View>
+            <View style={styles.investmentStatus}>
+              <Text style={styles.investmentStatusText}>Active</Text>
+            </View>
+          </View>
+          
+          <View style={styles.investmentMetrics}>
+            <View style={styles.investmentMetric}>
+              <Text style={styles.investmentMetricLabel}>Original</Text>
+              <Text style={styles.investmentMetricValue}>
+                {formatCurrency(investment.amount, investment.currency)}
+              </Text>
+            </View>
+            <View style={styles.investmentMetric}>
+              <Text style={styles.investmentMetricLabel}>Current</Text>
+              <Text style={styles.investmentMetricValue}>
+                {formatCurrency(currentValue, investment.currency)}
+              </Text>
+            </View>
+            <View style={styles.investmentMetric}>
+              <Text style={styles.investmentMetricLabel}>Profit</Text>
+              <Text style={[styles.investmentMetricValue, styles.profitText]}>
+                +{formatCurrency(profit, investment.currency)}
+              </Text>
+              <Text style={[styles.profitPercent, profit >= 0 ? styles.profitPositive : styles.profitNegative]}>
+                ({profitPercent >= 0 ? '+' : ''}{profitPercent.toFixed(2)}%)
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.investmentProgress}>
+            <View style={styles.progressHeader}>
+              <Clock size={14} color="#6b7280" />
+              <Text style={styles.progressText}>
+                {daysRemaining} days remaining
+              </Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            </View>
+            <Text style={styles.progressPercent}>{Math.round(progress)}% complete</Text>
+          </View>
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (!isHydrated) {
     return <HomePageSkeleton />;
@@ -120,6 +189,23 @@ export default function HomeScreen() {
               </View>
             </CardContent>
           </Card>
+        )}
+
+        {/* Active Investments Section */}
+        {investments.filter(inv => inv.status === 'Active').length > 0 && (
+          <View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Investments</Text>
+              <TrendingUp size={20} color="#059669" />
+            </View>
+            <View style={styles.investmentsList}>
+              {investments
+                .filter(inv => inv.status === 'Active')
+                .map(investment => (
+                  <ActiveInvestmentCard key={investment.id} investment={investment} />
+                ))}
+            </View>
+          </View>
         )}
 
         <View>
@@ -262,6 +348,112 @@ const styles = StyleSheet.create({
   },
   chartPlaceholderText: {
     fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  investmentsList: {
+    gap: 16,
+  },
+  investmentCard: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  investmentCardContent: {
+    gap: 16,
+  },
+  investmentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  investmentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  investmentSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  investmentStatus: {
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  investmentStatusText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#22c55e',
+  },
+  investmentMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  investmentMetric: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  investmentMetricLabel: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  investmentMetricValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    letterSpacing: -0.2,
+  },
+  profitText: {
+    color: '#059669',
+  },
+  profitPercent: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  profitPositive: {
+    color: '#059669',
+  },
+  profitNegative: {
+    color: '#dc2626',
+  },
+  investmentProgress: {
+    gap: 8,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+    borderRadius: 2,
+  },
+  progressPercent: {
+    fontSize: 11,
     color: '#6b7280',
     textAlign: 'center',
   },
