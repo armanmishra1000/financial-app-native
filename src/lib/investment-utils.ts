@@ -123,3 +123,52 @@ export function calculateProgress(startDate: string | Date, durationDays: number
   const progress = (daysPassed / durationDays) * 100;
   return Math.min(100, Math.max(0, progress));
 }
+
+/**
+ * Calculate lock expiry date (30 days from start date)
+ * @param startDate Investment start date
+ * @returns ISO string for lock expiry date
+ */
+export function calculateLockExpiry(startDate: string | Date): string {
+  const start = new Date(startDate);
+  const lockExpiry = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+  return lockExpiry.toISOString();
+}
+
+/**
+ * Check if investment is currently locked
+ * @param lockedUntil Lock expiry date
+ * @returns true if locked, false if unlocked
+ */
+export function isInvestmentLocked(lockedUntil: string): boolean {
+  const now = new Date();
+  const lockExpiry = new Date(lockedUntil);
+  return now < lockExpiry;
+}
+
+/**
+ * Get remaining days until unlock
+ * @param lockedUntil Lock expiry date
+ * @returns Number of days remaining (0 if unlocked)
+ */
+export function getDaysUntilUnlock(lockedUntil: string): number {
+  const now = new Date();
+  const lockExpiry = new Date(lockedUntil);
+  const msRemaining = lockExpiry.getTime() - now.getTime();
+  const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+  return Math.max(0, daysRemaining);
+}
+
+/**
+ * Format lock expiry date for display
+ * @param lockedUntil Lock expiry date
+ * @returns Formatted date string (e.g., "Oct 28, 2025")
+ */
+export function formatLockExpiry(lockedUntil: string): string {
+  const lockExpiry = new Date(lockedUntil);
+  return lockExpiry.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+}

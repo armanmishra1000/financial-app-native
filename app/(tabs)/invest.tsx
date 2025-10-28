@@ -8,7 +8,7 @@ import { Input } from '../../src/components/ui/input';
 import { Select } from '../../src/components/ui/select';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
-import { calculateDailyRate, calculateExpectedReturn, formatDailyRate, getROIBreakdown } from '../../src/lib/investment-utils';
+import { calculateDailyRate, calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
 
 export default function InvestScreen() {
   const router = useRouter();
@@ -116,9 +116,13 @@ export default function InvestScreen() {
 
       setIsLoading(false);
       
+      // Calculate lock expiry date for message
+      const lockExpiry = new Date();
+      lockExpiry.setDate(lockExpiry.getDate() + 30);
+      
       Alert.alert(
         "Investment Successful!",
-        `Your investment of ${formatCurrency(numericAmount, user.currency)} in ${selectedPlan!.name} has been processed. You'll start earning daily compound interest!`,
+        `Your investment of ${formatCurrency(numericAmount, user.currency)} in ${selectedPlan!.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${formatLockExpiry(lockExpiry.toISOString())}`,
         [
           {
             text: "OK",
@@ -191,6 +195,14 @@ export default function InvestScreen() {
                   <Text style={styles.summaryLabel}>Your Investment</Text>
                   <Text style={styles.summaryValue}>
                     {formatCurrency(parseFloat(amount) || 0, user.currency)}
+                  </Text>
+                </View>
+                
+                {/* 30-Day Lock Warning */}
+                <View style={styles.lockWarning}>
+                  <Text style={styles.lockWarningTitle}>⚠️ 30-Day Lock Period</Text>
+                  <Text style={styles.lockWarningText}>
+                    Withdrawals will be blocked for 30 days after investment. This protects your investment and ensures compound interest growth.
                   </Text>
                 </View>
                 
@@ -435,5 +447,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#059669',
+  },
+  lockWarning: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: 8,
+    gap: 6,
+  },
+  lockWarningTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#d97706',
+  },
+  lockWarningText: {
+    fontSize: 12,
+    color: '#92400e',
+    lineHeight: 16,
   },
 });

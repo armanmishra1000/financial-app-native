@@ -1,7 +1,7 @@
 import * as React from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { user as initialUser, transactions as initialTransactions, notifications as initialNotifications, paymentMethods as initialPaymentMethods, Transaction, Notification, PaymentMethod, AuthUser, mockUsers, Plan, plans } from "../lib/data";
-import { calculateDailyRate, calculateCurrentValue, calculateDaysRemaining, calculateProgress } from "../lib/investment-utils";
+import { calculateDailyRate, calculateCurrentValue, calculateDaysRemaining, calculateProgress, calculateLockExpiry, isInvestmentLocked } from "../lib/investment-utils";
 
 interface User {
   name: string;
@@ -18,6 +18,8 @@ export type Investment = {
   expectedEndDate: string; // ISO string
   status: 'Active' | 'Completed' | 'Cancelled';
   currency: string;
+  lockedUntil: string; // ISO string - 30 days from start date
+  isLocked: boolean; // Helper flag for quick lock status check
 };
 
 interface AppContextState {
@@ -31,7 +33,7 @@ interface AppContextState {
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void;
   deletePaymentMethod: (methodId: string) => void;
   investments: Investment[];
-  createInvestment: (investment: Omit<Investment, 'id' | 'startDate' | 'expectedEndDate' | 'status'>) => void;
+  createInvestment: (investment: Omit<Investment, 'id' | 'startDate' | 'expectedEndDate' | 'status' | 'lockedUntil' | 'isLocked'>) => void;
   getInvestmentCurrentValue: (investmentId: string) => number;
   logout: () => void;
   isHydrated: boolean;
@@ -142,18 +144,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
   };
 
-  const createInvestment = (investment: Omit<Investment, 'id' | 'startDate' | 'expectedEndDate' | 'status'>) => {
+  const createInvestment = (investment: Omit<Investment, 'id' | 'startDate' | 'expectedEndDate' | 'status' | 'lockedUntil' | 'isLocked'>) => {
     const now = new Date();
     const startDate = now.toISOString();
     const expectedEndDate = new Date(now.getTime() + (investment.planId === 'p1' ? 7 : 
                                                       investment.planId === 'p2' ? 30 :
                                                       investment.planId === 'p3' ? 180 : 365) * 24 * 60 * 60 * 1000).toISOString();
+    const lockedUntil = calculateLockExpiry(startDate);
     
     const newInvestment: Investment = {
       ...investment,
       id: `inv${investments.length + 1}`,
       startDate,
       expectedEndDate,
+      lockedUntil,
+      isLocked: true,
       status: 'Active',
     };
     
@@ -245,7 +250,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await AsyncStorage.clear();
-      setUser(initialUser);
+      // Use empty user state instead of initialUser to prevent showing Alex's profile
+      const emptyUser = { name: '', balance: 0, currency: 'USD' };
+      setUser(emptyUser);
       setTransactions(initialTransactions);
       setNotifications(initialNotifications);
       setPaymentMethods(initialPaymentMethods);

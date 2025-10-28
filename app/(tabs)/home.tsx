@@ -13,8 +13,8 @@ import { BalanceChart } from '../../src/components/balance-chart';
 import { formatCurrency } from '../../src/lib/utils';
 import { plans, Plan } from '../../src/lib/data';
 import { HomePageSkeleton } from '../../src/components/home-page-skeleton';
-import { Briefcase, BarChart2, Wallet, TrendingUp, Clock } from 'lucide-react-native';
-import { calculateCurrentValue, calculateDailyRate, calculateDaysRemaining, calculateProgress } from '../../src/lib/investment-utils';
+import { Briefcase, BarChart2, Wallet, TrendingUp, Clock, Lock, Unlock } from 'lucide-react-native';
+import { calculateCurrentValue, calculateDailyRate, calculateDaysRemaining, calculateProgress, isInvestmentLocked, getDaysUntilUnlock, formatLockExpiry } from '../../src/lib/investment-utils';
 
 export default function HomeScreen() {
   const { user, transactions, investments, getInvestmentCurrentValue, isHydrated } = useAppContext();
@@ -59,6 +59,10 @@ export default function HomeScreen() {
     const daysRemaining = plan ? calculateDaysRemaining(investment.startDate, plan.duration_days) : 0;
     const progress = plan ? calculateProgress(investment.startDate, plan.duration_days) : 0;
     
+    // Check lock status
+    const isLocked = isInvestmentLocked(investment.lockedUntil);
+    const daysUntilUnlock = getDaysUntilUnlock(investment.lockedUntil);
+    
     return (
       <Card style={styles.investmentCard}>
         <CardContent style={styles.investmentCardContent}>
@@ -72,6 +76,34 @@ export default function HomeScreen() {
             <View style={styles.investmentStatus}>
               <Text style={styles.investmentStatusText}>Active</Text>
             </View>
+          </View>
+          
+          {/* Lock Status Indicator */}
+          <View style={styles.lockStatus}>
+            <View style={styles.lockStatusHeader}>
+              {isLocked ? (
+                <>
+                  <Lock size={14} color="#dc2626" />
+                  <Text style={styles.lockStatusTextLocked}>🔒 Locked</Text>
+                </>
+              ) : (
+                <>
+                  <Unlock size={14} color="#059669" />
+                  <Text style={styles.lockStatusTextUnlocked}>🔓 Unlocked</Text>
+                </>
+              )}
+            </View>
+            <Text style={styles.lockStatusDescription}>
+              {isLocked 
+                ? `Withdrawals blocked until ${formatLockExpiry(investment.lockedUntil)}`
+                : 'Withdrawals allowed'
+              }
+            </Text>
+            {isLocked && (
+              <Text style={styles.lockStatusDays}>
+                {daysUntilUnlock} days remaining
+              </Text>
+            )}
           </View>
           
           <View style={styles.investmentMetrics}>
@@ -456,5 +488,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  lockStatus: {
+    backgroundColor: 'rgba(243, 244, 246, 0.5)',
+    padding: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  lockStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lockStatusTextLocked: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#dc2626',
+  },
+  lockStatusTextUnlocked: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  lockStatusDescription: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginLeft: 20,
+  },
+  lockStatusDays: {
+    fontSize: 10,
+    color: '#dc2626',
+    marginLeft: 20,
+    fontWeight: '500',
   },
 });

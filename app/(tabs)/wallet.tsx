@@ -8,11 +8,12 @@ import { Input } from '../../src/components/ui/input';
 import { TransactionItem } from '../../src/components/transaction-item';
 import { formatCurrency } from '../../src/lib/utils';
 import { Transaction } from '../../src/lib/data';
+import { isInvestmentLocked, formatLockExpiry } from '../../src/lib/investment-utils';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
 
 export default function WalletScreen() {
-  const { user, transactions, addTransaction } = useAppContext();
+  const { user, transactions, addTransaction, investments } = useAppContext();
   const [dialogOpen, setDialogOpen] = React.useState<DialogType>(null);
   const [filter, setFilter] = React.useState<Transaction['type'] | 'All'>('All');
   const [amount, setAmount] = React.useState('');
@@ -66,6 +67,25 @@ export default function WalletScreen() {
     if (dialogOpen === 'Withdrawal' && numericAmount > user.balance) {
       Alert.alert("Insufficient Funds", "You don't have enough balance for this withdrawal.");
       return;
+    }
+
+    // Check for locked investments before withdrawal
+    if (dialogOpen === 'Withdrawal') {
+      const lockedInvestments = investments.filter(inv => 
+        inv.status === 'Active' && isInvestmentLocked(inv.lockedUntil)
+      );
+
+      if (lockedInvestments.length > 0) {
+        const earliestUnlock = lockedInvestments
+          .map(inv => inv.lockedUntil)
+          .sort()[0]; // Get earliest unlock date
+        
+        Alert.alert(
+          "Withdrawal Blocked",
+          `You have ${lockedInvestments.length} locked investment(s). Withdrawals are not allowed until all investments unlock.\n\nEarliest unlock: ${formatLockExpiry(earliestUnlock)}`
+        );
+        return;
+      }
     }
 
     setIsLoading(true);
