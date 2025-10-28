@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing } from 'react-native';
 import { ArrowDownToLine, ArrowUpFromLine, FilterX } from 'lucide-react-native';
-import { useAppContext } from '../../src/context/app-context';
+import { useData } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
@@ -17,7 +17,7 @@ type DialogType = 'Deposit' | 'Withdrawal' | null;
 type ViewMode = 'Wallet' | 'Retire';
 
 export default function WalletScreen() {
-  const { user, transactions, addTransaction, investments } = useAppContext();
+  const { user, transactions, addTransaction, investments } = useData();
   const [dialogOpen, setDialogOpen] = React.useState<DialogType>(null);
   const [filter, setFilter] = React.useState<Transaction['type'] | 'All'>('All');
   const [viewMode, setViewMode] = React.useState<ViewMode>('Wallet');

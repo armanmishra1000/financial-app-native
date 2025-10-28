@@ -33,6 +33,19 @@ export type PaymentMethod = {
   expiry?: string; // e.g., '08/28'
 };
 
+export type Investment = {
+  id: string;
+  planId: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  startDate: string;
+  expectedEndDate: string;
+  lockedUntil: string;
+  isLocked: boolean;
+  status: 'Active' | 'Completed' | 'Cancelled';
+};
+
 export type CurrencyInfo = {
   code: string;
   name: string;

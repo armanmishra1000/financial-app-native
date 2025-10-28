@@ -9,7 +9,7 @@ import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
 import { calculateDailyRate, formatDailyRate, getROIBreakdown } from '../../src/lib/investment-utils';
 import { convertFromUSD } from '../../src/lib/currency-utils';
-import { useAppContext } from '../../src/context/app-context';
+import { useData } from '../../src/context';
 
 interface PlanCardProps {
   plan: Plan;
@@ -77,7 +77,7 @@ const PlanCard = ({ plan, recommended, onPress, displayCurrency = 'USD' }: PlanC
 
 export default function PlansScreen() {
   const router = useRouter();
-  const { user } = useAppContext();
+  const { user } = useData();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useAppContext } from '../../src/context/app-context';
+import { useData } from '../../src/context';
 import { NotificationItem } from '../../src/components/notification-item';
 import { format } from 'date-fns';
 
 export default function NotificationsScreen() {
-  const { notifications, markNotificationsAsRead } = useAppContext();
+  const { notifications, markNotificationsAsRead } = useData();
 
   const handleMarkAllAsRead = () => {
     markNotificationsAsRead();

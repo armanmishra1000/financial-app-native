@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Bell, CreditCard, Shield, FileText, HelpCircle, LogOut, SunMoon, Globe } from 'lucide-react-native';
-import { useAppContext } from '../../src/context/app-context';
+import { useData, useAuth } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Avatar } from '../../src/components/ui/avatar';
@@ -11,7 +11,8 @@ import { Select } from '../../src/components/ui/select';
 import { getSupportedCurrencyCodes, getCurrencyDisplayName } from '../../src/lib/currency-utils';
 
 export default function ProfileScreen() {
-  const { user, logout, setDisplayCurrency } = useAppContext();
+  const { user, setDisplayCurrency } = useData();
+  const { logout } = useAuth();
   const router = useRouter();
   const [isDarkMode, setIsDarkMode] = React.useState(false);
   const [isComingSoonOpen, setIsComingSoonOpen] = React.useState(false);

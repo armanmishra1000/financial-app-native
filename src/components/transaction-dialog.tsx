@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter } from './ui/modal';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { useAppContext } from '../context/app-context';
+import { useData } from '../context';
 import { formatCurrency } from '../lib/utils';
 import { convertToUSD, convertFromUSD } from '../lib/currency-utils';
 // import { toast } from 'sonner-native';
@@ -15,7 +15,7 @@ interface TransactionDialogProps {
 }
 
 export function TransactionDialog({ open, onOpenChange, type }: TransactionDialogProps) {
-  const { user, addTransaction } = useAppContext();
+  const { user, addTransaction } = useData();
   const [amount, setAmount] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
 

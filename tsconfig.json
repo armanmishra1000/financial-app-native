@@ -3,9 +3,19 @@
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
+    "skipLibCheck": true,
+    "incremental": true,
+    "composite": false,
     "paths": {
       "@/*": ["./src/*"],
       "@/src/*": ["./src/*"]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "dist",
+    "build"
+  ]
 }

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAppContext } from '../../src/context/app-context';
+import { useAuth, useAppState } from '../../src/context';
 import { Input } from '../../src/components/ui/input';
 import { Button } from '../../src/components/ui/button';
 import { Card } from '../../src/components/ui/card';
@@ -28,7 +28,8 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function SignupScreen() {
-  const { signup, isHydrated } = useAppContext();
+  const { signup } = useAuth();
+  const { isHydrated } = useAppState();
   const [isLoading, setIsLoading] = useState(false);
   
 

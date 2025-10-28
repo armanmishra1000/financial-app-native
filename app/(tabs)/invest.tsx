@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAppContext } from '../../src/context/app-context';
+import { useData, useAuth } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
@@ -14,7 +14,7 @@ import { convertFromUSD, convertToUSD, getExchangeRateString } from '../../src/l
 
 export default function InvestScreen() {
   const router = useRouter();
-  const { user, addTransaction, createInvestment } = useAppContext();
+  const { user, addTransaction, createInvestment } = useData();
 
   const [selectedPlan, setSelectedPlan] = React.useState<Plan | undefined>(plans[1]);
   const [amount, setAmount] = React.useState<string>("500");

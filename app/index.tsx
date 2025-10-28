@@ -1,9 +1,10 @@
 import { Redirect } from 'expo-router';
-import { useAppContext } from '../src/context/app-context';
+import { useAuth, useAppState } from '../src/context';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
-  const { isAuthenticated, isHydrated } = useAppContext();
+  const { isAuthenticated } = useAuth();
+  const { isHydrated } = useAppState();
 
   if (!isHydrated) {
     return (

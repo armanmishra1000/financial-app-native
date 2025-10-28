@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { useAppContext } from '../../src/context/app-context';
+import { useAuth, useAppState } from '../../src/context';
 import { Button } from '../../src/components/ui/button';
 import { Card } from '../../src/components/ui/card';
 import { OtpInput } from 'react-native-otp-entry';
 
 export default function VerifyOTPScreen() {
-  const { verify2FA, isHydrated } = useAppContext();
+  const { verify2FA } = useAuth();
+  const { isHydrated } = useAppState();
   const [isLoading, setIsLoading] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');

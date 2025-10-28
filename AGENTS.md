@@ -5,3 +5,5 @@
 - Never run dev server, we have already running in another terminal.
 
 - if same error repeat twice after implementing the fix once, then do specific web search and find the solution.
+
+- Never Use `any` types - it's Defeats purpose of TypeScript

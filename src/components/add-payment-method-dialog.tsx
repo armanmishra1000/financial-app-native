@@ -7,7 +7,7 @@ import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFo
 import { Input } from './ui/input';
 import { Select } from './ui/select';
 import { Button } from './ui/button';
-import { useAppContext } from '../context/app-context';
+import { useData } from '../context';
 // import { toast } from 'sonner-native';
 
 interface AddPaymentMethodDialogProps {
@@ -22,7 +22,7 @@ const formSchema = z.object({
 });
 
 export function AddPaymentMethodDialog({ open, onOpenChange }: AddPaymentMethodDialogProps) {
-  const { addPaymentMethod } = useAppContext();
+  const { addPaymentMethod } = useData();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({

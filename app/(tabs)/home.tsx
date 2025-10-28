@@ -3,7 +3,8 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Animate
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff, ArrowUpRight } from 'lucide-react-native';
 
-import { useAppContext } from '../../src/context/app-context';
+import { useData, useAppState } from '../../src/context';
+import { useInvestmentCalculations } from '../../src/hooks/useInvestmentCalculations';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Avatar } from '../../src/components/ui/avatar';
@@ -18,7 +19,9 @@ import { calculateCurrentValue, calculateDailyRate, calculateDaysRemaining, calc
 import { convertFromUSD } from '../../src/lib/currency-utils';
 
 export default function HomeScreen() {
-  const { user, transactions, investments, getInvestmentCurrentValue, isHydrated } = useAppContext();
+  const { user, transactions, investments } = useData();
+  const { getInvestmentCurrentValue } = useInvestmentCalculations();
+  const { isHydrated } = useAppState();
   const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = React.useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;

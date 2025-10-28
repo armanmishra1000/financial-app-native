@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { useAppContext } from '../context/app-context';
+import { useData } from '../context';
 
 export function AccountDetails() {
-  const { user } = useAppContext();
+  const { user } = useData();
 
   return (
     <Card>

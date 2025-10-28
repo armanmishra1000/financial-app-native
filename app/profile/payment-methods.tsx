@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useAppContext } from '../../src/context/app-context';
+import { useData } from '../../src/context';
 import { Card, CardHeader, CardTitle, CardContent } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { PaymentMethodItem } from '../../src/components/payment-method-item';
@@ -8,7 +8,7 @@ import { AddPaymentMethodDialog } from '../../src/components/add-payment-method-
 import { Plus } from 'lucide-react-native';
 
 export default function PaymentMethodsScreen() {
-  const { paymentMethods } = useAppContext();
+  const { paymentMethods } = useData();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
   return (

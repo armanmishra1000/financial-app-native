@@ -6,7 +6,7 @@ import * as z from 'zod';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { useAppContext } from '../context/app-context';
+import { useData } from '../context';
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -20,7 +20,7 @@ interface EditProfileFormProps {
 }
 
 export function EditProfileForm({ onSuccess }: EditProfileFormProps) {
-  const { user, setUser } = useAppContext();
+  const { user, setUser } = useData();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const form = useForm<FormData>({
