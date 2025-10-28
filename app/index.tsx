@@ -1,0 +1,21 @@
+import { Redirect } from 'expo-router';
+import { useAppContext } from '../src/context/app-context';
+import { ActivityIndicator, View } from 'react-native';
+
+export default function Index() {
+  const { isAuthenticated, isHydrated } = useAppContext();
+
+  if (!isHydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/(tabs)/home" />;
+  }
+
+  return <Redirect href="/(auth)/login" />;
+}
