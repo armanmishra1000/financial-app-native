@@ -5,9 +5,11 @@ import { formatCurrency } from '../lib/utils';
 import { Briefcase, Wallet, BarChart2 } from 'lucide-react-native';
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
+import { convertFromUSD } from '../lib/currency-utils';
 
 interface TransactionItemProps {
   transaction: Transaction;
+  displayCurrency?: string;
 }
 
 const transactionIcons = {
@@ -23,9 +25,12 @@ const statusVariants: { [key in Transaction['status']]: "secondary" | "outline" 
   Failed: "destructive",
 };
 
-export function TransactionItem({ transaction }: TransactionItemProps) {
+export function TransactionItem({ transaction, displayCurrency = 'USD' }: TransactionItemProps) {
   const isPositive = transaction.amount > 0;
   const Icon = transactionIcons[transaction.type];
+  
+  // Convert amount to display currency
+  const displayAmount = convertFromUSD(transaction.amount, displayCurrency);
   
   return (
     <View style={styles.container}>
@@ -50,7 +55,7 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
       </View>
       
       <Text style={[styles.amount, isPositive && styles.amountPositive]}>
-        {isPositive ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
+        {isPositive ? '+' : ''}{formatCurrency(Math.abs(displayAmount), displayCurrency)}
       </Text>
     </View>
   );

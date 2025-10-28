@@ -33,6 +33,14 @@ export type PaymentMethod = {
   expiry?: string; // e.g., '08/28'
 };
 
+export type CurrencyInfo = {
+  code: string;
+  name: string;
+  symbol: string;
+  rateToUSD: number; // 1 USD = rateToUSD * targetCurrency
+  decimalPlaces: number;
+};
+
 export type AuthUser = {
   id: string;
   name: string;
@@ -47,6 +55,7 @@ export const user = {
   name: 'Alex Doe',
   balance: 12700.00,
   currency: 'USD',
+  displayCurrency: 'USD',
 };
 
 export const transactions: Transaction[] = [
@@ -75,6 +84,27 @@ export const paymentMethods: PaymentMethod[] = [
   { id: 'pm1', type: 'Card', provider: 'Visa', last4: '4242', expiry: '08/28' },
   { id: 'pm2', type: 'Bank', provider: 'Chase Bank', last4: '9876' },
 ];
+
+// Supported currencies with mock exchange rates
+export const supportedCurrencies: Record<string, CurrencyInfo> = {
+  USD: { code: 'USD', name: 'US Dollar', symbol: '$', rateToUSD: 1.0, decimalPlaces: 2 },
+  MXN: { code: 'MXN', name: 'Mexican Peso', symbol: 'Mex$', rateToUSD: 17.5, decimalPlaces: 2 },
+  EUR: { code: 'EUR', name: 'Euro', symbol: '€', rateToUSD: 0.92, decimalPlaces: 2 },
+  GBP: { code: 'GBP', name: 'British Pound', symbol: '£', rateToUSD: 0.79, decimalPlaces: 2 },
+  CAD: { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', rateToUSD: 1.35, decimalPlaces: 2 },
+  BRL: { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', rateToUSD: 5.0, decimalPlaces: 2 },
+  ARS: { code: 'ARS', name: 'Argentine Peso', symbol: 'AR$', rateToUSD: 350.0, decimalPlaces: 2 },
+  COP: { code: 'COP', name: 'Colombian Peso', symbol: 'COL$', rateToUSD: 3800.0, decimalPlaces: 0 },
+  PEN: { code: 'PEN', name: 'Peruvian Sol', symbol: 'S/', rateToUSD: 3.7, decimalPlaces: 2 },
+  CLP: { code: 'CLP', name: 'Chilean Peso', symbol: 'CLP$', rateToUSD: 950.0, decimalPlaces: 0 },
+  VES: { code: 'VES', name: 'Venezuelan Bolívar', symbol: 'Bs.', rateToUSD: 35.0, decimalPlaces: 2 },
+  JPY: { code: 'JPY', name: 'Japanese Yen', symbol: '¥', rateToUSD: 150.0, decimalPlaces: 0 },
+  CNY: { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', rateToUSD: 7.2, decimalPlaces: 2 },
+  INR: { code: 'INR', name: 'Indian Rupee', symbol: '₹', rateToUSD: 83.0, decimalPlaces: 2 },
+  AUD: { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', rateToUSD: 1.5, decimalPlaces: 2 },
+  NZD: { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$', rateToUSD: 1.6, decimalPlaces: 2 },
+  SGD: { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', rateToUSD: 1.3, decimalPlaces: 2 },
+};
 
 export const mockUsers: AuthUser[] = [
   {

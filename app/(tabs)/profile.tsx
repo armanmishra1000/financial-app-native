@@ -1,15 +1,17 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, Bell, CreditCard, Shield, FileText, HelpCircle, LogOut, SunMoon } from 'lucide-react-native';
+import { User, Bell, CreditCard, Shield, FileText, HelpCircle, LogOut, SunMoon, Globe } from 'lucide-react-native';
 import { useAppContext } from '../../src/context/app-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Avatar } from '../../src/components/ui/avatar';
 import { Switch } from '../../src/components/ui/switch';
+import { Select } from '../../src/components/ui/select';
+import { getSupportedCurrencyCodes, getCurrencyDisplayName } from '../../src/lib/currency-utils';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAppContext();
+  const { user, logout, setDisplayCurrency } = useAppContext();
   const router = useRouter();
   const [isDarkMode, setIsDarkMode] = React.useState(false);
   const [isComingSoonOpen, setIsComingSoonOpen] = React.useState(false);
@@ -128,6 +130,24 @@ export default function ProfileScreen() {
                     onValueChange={handleThemeChange}
                   />
                 </View>
+                <View style={styles.menuItemSeparator} />
+                <View style={styles.menuItem}>
+                  <View style={styles.menuItemIcon}>
+                    <Globe size={20} color="#6b7280" />
+                  </View>
+                  <View style={styles.menuItemContent}>
+                    <Text style={styles.menuItemLabel}>Display Currency</Text>
+                    <Select
+                      value={user.displayCurrency}
+                      onValueChange={setDisplayCurrency}
+                      items={getSupportedCurrencyCodes().map(code => ({
+                        label: getCurrencyDisplayName(code),
+                        value: code
+                      }))}
+                      placeholder="Select currency"
+                    />
+                  </View>
+                </View>
               </CardContent>
             </Card>
 
@@ -240,6 +260,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#111827',
+  },
+  menuItemContent: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 8,
+  },
+  currencySelect: {
+    marginTop: 4,
   },
   menuItemSeparator: {
     height: 1,

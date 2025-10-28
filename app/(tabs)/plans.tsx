@@ -8,16 +8,22 @@ import { Badge } from '../../src/components/ui/badge';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
 import { calculateDailyRate, formatDailyRate, getROIBreakdown } from '../../src/lib/investment-utils';
+import { convertFromUSD } from '../../src/lib/currency-utils';
+import { useAppContext } from '../../src/context/app-context';
 
 interface PlanCardProps {
   plan: Plan;
   recommended?: boolean;
   onPress: () => void;
+  displayCurrency?: string;
 }
 
-const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
+const PlanCard = ({ plan, recommended, onPress, displayCurrency = 'USD' }: PlanCardProps) => {
   const dailyRate = calculateDailyRate(plan.roi_percent);
   const roiBreakdown = getROIBreakdown(plan.roi_percent);
+  
+  // Convert min deposit to display currency
+  const displayMinDeposit = convertFromUSD(plan.min_deposit, displayCurrency);
   
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
@@ -59,7 +65,7 @@ const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
             <View style={styles.detailRow}>
               <DollarSign size={16} color="#6b7280" />
               <Text style={styles.detailText}>
-                Minimum: <Text style={styles.detailTextBold}>{formatCurrency(plan.min_deposit)}</Text>
+                Minimum: <Text style={styles.detailTextBold}>{formatCurrency(displayMinDeposit, displayCurrency)}</Text>
               </Text>
             </View>
           </View>
@@ -80,6 +86,7 @@ const PlanCard = ({ plan, recommended, onPress }: PlanCardProps) => {
 
 export default function PlansScreen() {
   const router = useRouter();
+  const { user } = useAppContext();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
 
@@ -119,6 +126,7 @@ export default function PlansScreen() {
                 plan={plan}
                 recommended={index === 1}
                 onPress={() => handleInvestPress(plan.id)}
+                displayCurrency={user.displayCurrency}
               />
             ))}
           </View>

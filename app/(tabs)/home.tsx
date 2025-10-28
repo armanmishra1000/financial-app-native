@@ -15,6 +15,7 @@ import { plans, Plan } from '../../src/lib/data';
 import { HomePageSkeleton } from '../../src/components/home-page-skeleton';
 import { Briefcase, BarChart2, Wallet, TrendingUp, Clock, Lock, Unlock } from 'lucide-react-native';
 import { calculateCurrentValue, calculateDailyRate, calculateDaysRemaining, calculateProgress, isInvestmentLocked, getDaysUntilUnlock, formatLockExpiry } from '../../src/lib/investment-utils';
+import { convertFromUSD } from '../../src/lib/currency-utils';
 
 export default function HomeScreen() {
   const { user, transactions, investments, getInvestmentCurrentValue, isHydrated } = useAppContext();
@@ -63,6 +64,11 @@ export default function HomeScreen() {
     const isLocked = isInvestmentLocked(investment.lockedUntil);
     const daysUntilUnlock = getDaysUntilUnlock(investment.lockedUntil);
     
+    // Convert amounts to display currency
+    const displayAmount = convertFromUSD(investment.amount, user.displayCurrency);
+    const displayCurrentValue = convertFromUSD(currentValue, user.displayCurrency);
+    const displayProfit = convertFromUSD(profit, user.displayCurrency);
+    
     return (
       <Card style={styles.investmentCard}>
         <CardContent style={styles.investmentCardContent}>
@@ -110,19 +116,19 @@ export default function HomeScreen() {
             <View style={styles.investmentMetric}>
               <Text style={styles.investmentMetricLabel}>Original</Text>
               <Text style={styles.investmentMetricValue}>
-                {formatCurrency(investment.amount, investment.currency)}
+                {formatCurrency(displayAmount, user.displayCurrency)}
               </Text>
             </View>
             <View style={styles.investmentMetric}>
               <Text style={styles.investmentMetricLabel}>Current</Text>
               <Text style={styles.investmentMetricValue}>
-                {formatCurrency(currentValue, investment.currency)}
+                {formatCurrency(displayCurrentValue, user.displayCurrency)}
               </Text>
             </View>
             <View style={styles.investmentMetric}>
               <Text style={styles.investmentMetricLabel}>Profit</Text>
               <Text style={[styles.investmentMetricValue, styles.profitText]}>
-                +{formatCurrency(profit, investment.currency)}
+                +{formatCurrency(displayProfit, user.displayCurrency)}
               </Text>
               <Text style={[styles.profitPercent, profit >= 0 ? styles.profitPositive : styles.profitNegative]}>
                 ({profitPercent >= 0 ? '+' : ''}{profitPercent.toFixed(2)}%)
@@ -191,7 +197,7 @@ export default function HomeScreen() {
                   styles.balanceAmount,
                   !isBalanceVisible && styles.balanceHidden
                 ]}>
-                  {formatCurrency(user.balance, user.currency)}
+                  {formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}
                 </Text>
               </View>
             </View>
@@ -206,7 +212,7 @@ export default function HomeScreen() {
           <BalanceChart 
             transactions={transactions} 
             currentBalance={user.balance} 
-            currency={user.currency} 
+            currency={user.displayCurrency} 
           />
         ) : (
           <Card>
@@ -256,7 +262,7 @@ export default function HomeScreen() {
           <CardContent>
             <View style={styles.transactionsList}>
               {transactions.slice(0, 3).map(tx => (
-                <TransactionItem key={tx.id} transaction={tx} />
+                <TransactionItem key={tx.id} transaction={tx} displayCurrency={user.displayCurrency} />
               ))}
             </View>
             <Button 

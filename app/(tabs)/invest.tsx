@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
 import { Select } from '../../src/components/ui/select';
+import { CurrencyToggle } from '../../src/components/ui/currency-toggle';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
 import { calculateDailyRate, calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
+import { convertFromUSD, convertToUSD, getExchangeRateString } from '../../src/lib/currency-utils';
 
 export default function InvestScreen() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function InvestScreen() {
 
   const [selectedPlan, setSelectedPlan] = React.useState<Plan | undefined>(plans[1]);
   const [amount, setAmount] = React.useState<string>("500");
+  const [investmentCurrency, setInvestmentCurrency] = React.useState<string>(user.displayCurrency);
   const [isLoading, setIsLoading] = React.useState(false);
   
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -45,13 +48,26 @@ export default function InvestScreen() {
     }
   }, []);
 
+  // Convert amounts for display
+  const displayBalance = React.useMemo(() => {
+    return convertFromUSD(user.balance, investmentCurrency);
+  }, [user.balance, investmentCurrency]);
+
+  const displayMinDeposit = React.useMemo(() => {
+    if (!selectedPlan) return 0;
+    return convertFromUSD(selectedPlan.min_deposit, investmentCurrency);
+  }, [selectedPlan, investmentCurrency]);
+
   const investmentCalculation = React.useMemo(() => {
     if (!selectedPlan || !amount) return null;
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount)) return null;
     
-    return calculateExpectedReturn(numericAmount, selectedPlan.roi_percent, selectedPlan.duration_days);
-  }, [selectedPlan, amount]);
+    // Convert to USD for calculation
+    const amountUSD = investmentCurrency === 'USD' ? numericAmount : convertToUSD(numericAmount, investmentCurrency);
+    
+    return calculateExpectedReturn(amountUSD, selectedPlan.roi_percent, selectedPlan.duration_days);
+  }, [selectedPlan, amount, investmentCurrency]);
 
   const roiBreakdown = React.useMemo(() => {
     if (!selectedPlan) return null;
@@ -67,20 +83,23 @@ export default function InvestScreen() {
       return;
     }
 
-    if (numericAmount < selectedPlan.min_deposit) {
-      Alert.alert("Amount Too Low", `Amount must be at least ${formatCurrency(selectedPlan.min_deposit, user.currency)}.`);
+    // Convert to USD for validation
+    const amountUSD = investmentCurrency === 'USD' ? numericAmount : convertToUSD(numericAmount, investmentCurrency);
+
+    if (amountUSD < selectedPlan.min_deposit) {
+      Alert.alert("Amount Too Low", `Amount must be at least ${formatCurrency(displayMinDeposit, investmentCurrency)}.`);
       return;
     }
 
-    if (user.balance < numericAmount) {
-      Alert.alert("Insufficient Balance", "You don't have enough balance to make this investment.");
+    if (user.balance < amountUSD) {
+      Alert.alert("Insufficient Balance", `You don't have enough balance. Available: ${formatCurrency(displayBalance, investmentCurrency)}`);
       return;
     }
 
     // Confirmation dialog
     Alert.alert(
       "Confirm Investment",
-      `Invest ${formatCurrency(numericAmount, user.currency)} in ${selectedPlan.name}?`,
+      `Invest ${formatCurrency(numericAmount, investmentCurrency)} in ${selectedPlan.name}?`,
       [
         {
           text: "Cancel",
@@ -88,29 +107,29 @@ export default function InvestScreen() {
         },
         {
           text: "Confirm",
-          onPress: () => processInvestment(numericAmount)
+          onPress: () => processInvestment(amountUSD)
         }
       ]
     );
   };
 
-  const processInvestment = (numericAmount: number) => {
+  const processInvestment = (amountUSD: number) => {
     setIsLoading(true);
 
     // Simulate processing time
     setTimeout(() => {
-      // Create the investment record
+      // Create the investment record (always store in USD)
       createInvestment({
         planId: selectedPlan!.id,
         planName: selectedPlan!.name,
-        amount: numericAmount,
-        currency: user.currency,
+        amount: amountUSD,
+        currency: 'USD', // Always store in USD
       });
 
       // Create the transaction for the initial investment
       addTransaction({
         type: 'Investment',
-        amount: -numericAmount,
+        amount: -amountUSD,
         description: selectedPlan!.name,
       });
 
@@ -120,9 +139,12 @@ export default function InvestScreen() {
       const lockExpiry = new Date();
       lockExpiry.setDate(lockExpiry.getDate() + 30);
       
+      // Convert back to display currency for message
+      const displayAmount = investmentCurrency === 'USD' ? amountUSD : convertFromUSD(amountUSD, investmentCurrency);
+      
       Alert.alert(
         "Investment Successful!",
-        `Your investment of ${formatCurrency(numericAmount, user.currency)} in ${selectedPlan!.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${formatLockExpiry(lockExpiry.toISOString())}`,
+        `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan!.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${formatLockExpiry(lockExpiry.toISOString())}`,
         [
           {
             text: "OK",
@@ -168,9 +190,9 @@ export default function InvestScreen() {
 
                 <View style={styles.amountSection}>
                   <View style={styles.amountHeader}>
-                    <Text style={styles.amountLabel}>Amount to Invest ({user.currency})</Text>
+                    <Text style={styles.amountLabel}>Amount to Invest ({investmentCurrency})</Text>
                     <Text style={styles.balanceText}>
-                      Balance: {formatCurrency(user.balance, user.currency)}
+                      Balance: {formatCurrency(displayBalance, investmentCurrency)}
                     </Text>
                   </View>
                   <Input
@@ -181,7 +203,22 @@ export default function InvestScreen() {
                   />
                   {selectedPlan && (
                     <Text style={styles.helperText}>
-                      Minimum deposit: {formatCurrency(selectedPlan.min_deposit, user.currency)}
+                      Minimum deposit: {formatCurrency(displayMinDeposit, investmentCurrency)}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Currency Toggle */}
+                <View style={styles.currencySection}>
+                  <Text style={styles.currencyLabel}>Display Currency</Text>
+                  <CurrencyToggle
+                    value={investmentCurrency}
+                    onValueChange={setInvestmentCurrency}
+                    options={['USD', user.displayCurrency].filter((code, index, arr) => arr.indexOf(code) === index)}
+                  />
+                  {investmentCurrency !== 'USD' && (
+                    <Text style={styles.exchangeRateText}>
+                      {getExchangeRateString('USD', investmentCurrency)}
                     </Text>
                   )}
                 </View>
@@ -194,7 +231,7 @@ export default function InvestScreen() {
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Your Investment</Text>
                   <Text style={styles.summaryValue}>
-                    {formatCurrency(parseFloat(amount) || 0, user.currency)}
+                    {formatCurrency(parseFloat(amount) || 0, investmentCurrency)}
                   </Text>
                 </View>
                 
@@ -237,20 +274,20 @@ export default function InvestScreen() {
                     <View style={styles.compoundRow}>
                       <Text style={styles.compoundLabel}>Daily Earnings</Text>
                       <Text style={styles.compoundValue}>
-                        +{formatCurrency(investmentCalculation.dailyEarnings, user.currency)}
+                        +{formatCurrency(convertFromUSD(investmentCalculation.dailyEarnings, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
                     <View style={styles.compoundRow}>
                       <Text style={styles.compoundLabel}>Total Growth ({selectedPlan?.duration_days} days)</Text>
                       <Text style={styles.profitValue}>
-                        +{formatCurrency(investmentCalculation.profit, user.currency)}
+                        +{formatCurrency(convertFromUSD(investmentCalculation.profit, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryRow}>
                       <Text style={styles.totalLabel}>Final Value</Text>
                       <Text style={styles.totalValue}>
-                        {formatCurrency(investmentCalculation.total, user.currency)}
+                        {formatCurrency(convertFromUSD(investmentCalculation.total, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
                   </View>
@@ -330,6 +367,20 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  currencySection: {
+    gap: 12,
+  },
+  currencyLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  exchangeRateText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 4,
   },
   summarySection: {
     backgroundColor: 'rgba(243, 244, 246, 0.5)',

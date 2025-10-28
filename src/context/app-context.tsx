@@ -1,12 +1,14 @@
 import * as React from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { user as initialUser, transactions as initialTransactions, notifications as initialNotifications, paymentMethods as initialPaymentMethods, Transaction, Notification, PaymentMethod, AuthUser, mockUsers, Plan, plans } from "../lib/data";
+import { getCountryByCode } from "../lib/countries";
 import { calculateDailyRate, calculateCurrentValue, calculateDaysRemaining, calculateProgress, calculateLockExpiry, isInvestmentLocked } from "../lib/investment-utils";
 
 interface User {
   name: string;
   balance: number;
-  currency: string;
+  currency: string; // Base storage currency (always USD)
+  displayCurrency: string; // What user prefers to see
 }
 
 export type Investment = {
@@ -25,6 +27,7 @@ export type Investment = {
 interface AppContextState {
   user: User;
   setUser: React.Dispatch<React.SetStateAction<User>>;
+  setDisplayCurrency: (currency: string) => void;
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'status'>) => void;
   notifications: Notification[];
@@ -247,11 +250,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setDisplayCurrency = (currency: string) => {
+    setUser(prev => ({ ...prev, displayCurrency: currency }));
+  };
+
   const logout = async () => {
     try {
       await AsyncStorage.clear();
       // Use empty user state instead of initialUser to prevent showing Alex's profile
-      const emptyUser = { name: '', balance: 0, currency: 'USD' };
+      const emptyUser = { name: '', balance: 0, currency: 'USD', displayCurrency: 'USD' };
       setUser(emptyUser);
       setTransactions(initialTransactions);
       setNotifications(initialNotifications);
@@ -279,11 +286,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Generate mock token
       const token = `token_${Date.now()}_${foundUser.id}`;
       
+      // Get user's country and set display currency accordingly
+      const country = getCountryByCode(foundUser.country);
+      const displayCurrency = country?.currency || 'USD';
+      
       // Update user data
       setUser({
         name: foundUser.name,
         balance: initialUser.balance, // Keep existing balance
-        currency: 'USD', // Default currency
+        currency: 'USD', // Base storage currency
+        displayCurrency, // User's preferred display currency
       });
 
       return { success: true };
@@ -310,11 +322,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         id: `user_${Date.now()}`,
       };
 
+      // Get user's country and set display currency accordingly
+      const country = getCountryByCode(newUser.country);
+      const displayCurrency = country?.currency || 'USD';
+
       // Update user data
       setUser({
         name: newUser.name,
         balance: initialUser.balance, // Start with default balance
-        currency: 'USD', // Default currency
+        currency: 'USD', // Base storage currency
+        displayCurrency, // User's preferred display currency
       });
 
       return { success: true };
@@ -346,6 +363,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = { 
     user, 
     setUser, 
+    setDisplayCurrency,
     transactions, 
     addTransaction, 
     notifications, 

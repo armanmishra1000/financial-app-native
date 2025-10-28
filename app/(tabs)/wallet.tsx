@@ -11,6 +11,7 @@ import { AccountDetails } from '../../src/components/account-details';
 import { formatCurrency } from '../../src/lib/utils';
 import { Transaction } from '../../src/lib/data';
 import { isInvestmentLocked, formatLockExpiry } from '../../src/lib/investment-utils';
+import { convertFromUSD } from '../../src/lib/currency-utils';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
 type ViewMode = 'Wallet' | 'Retire';
@@ -116,7 +117,7 @@ export default function WalletScreen() {
       handleDialogClose();
       Alert.alert(
         "Success",
-        `${dialogOpen} of ${formatCurrency(numericAmount, user.currency)} completed successfully!`
+        `${dialogOpen} of ${formatCurrency(convertFromUSD(numericAmount, user.displayCurrency), user.displayCurrency)} completed successfully!`
       );
     }, 1000);
   };
@@ -149,7 +150,7 @@ export default function WalletScreen() {
         <Card>
           <CardHeader>
             <Text style={styles.balanceLabel}>Total Balance</Text>
-            <Text style={styles.balanceAmount}>{formatCurrency(user.balance, user.currency)}</Text>
+            <Text style={styles.balanceAmount}>{formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}</Text>
           </CardHeader>
           <CardContent>
             {/* Action buttons - Only in Wallet mode */}
@@ -214,7 +215,7 @@ export default function WalletScreen() {
               <View style={styles.transactionsList}>
                 {filteredTransactions.map(tx => (
                   <View key={tx.id} style={styles.transactionItem}>
-                    <TransactionItem transaction={tx} />
+                    <TransactionItem transaction={tx} displayCurrency={user.displayCurrency} />
                   </View>
                 ))}
               </View>
@@ -248,7 +249,7 @@ export default function WalletScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{dialogOpen} Funds</Text>
             <Text style={styles.modalDescription}>
-              Enter the amount you wish to {dialogOpen?.toLowerCase()}. Your current balance is {formatCurrency(user.balance, user.currency)}.
+              Enter the amount you wish to {dialogOpen?.toLowerCase()}. Your current balance is {formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}.
             </Text>
           </View>
           <View style={styles.modalContent}>
@@ -257,7 +258,7 @@ export default function WalletScreen() {
               <Input
                 value={amount}
                 onChangeText={setAmount}
-                placeholder={`Amount in ${user.currency}`}
+                placeholder={`Amount in ${user.displayCurrency}`}
                 keyboardType="numeric"
                 style={styles.amountInput}
               />
