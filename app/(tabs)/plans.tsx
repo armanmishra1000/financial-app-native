@@ -22,9 +22,6 @@ const PlanCard = ({ plan, recommended, onPress, displayCurrency = 'USD' }: PlanC
   const dailyRate = calculateDailyRate(plan.roi_percent);
   const roiBreakdown = getROIBreakdown(plan.roi_percent);
   
-  // Convert min deposit to display currency
-  const displayMinDeposit = convertFromUSD(plan.min_deposit, displayCurrency);
-  
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <Card style={recommended ? styles.planCardRecommended : styles.planCard}>
@@ -61,12 +58,6 @@ const PlanCard = ({ plan, recommended, onPress, displayCurrency = 'USD' }: PlanC
             <View style={styles.detailRow}>
               <Calendar size={16} color="#6b7280" />
               <Text style={styles.detailText}>{plan.duration_days} days duration</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <DollarSign size={16} color="#6b7280" />
-              <Text style={styles.detailText}>
-                Minimum: <Text style={styles.detailTextBold}>{formatCurrency(displayMinDeposit, displayCurrency)}</Text>
-              </Text>
             </View>
           </View>
         </CardContent>

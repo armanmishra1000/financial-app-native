@@ -43,10 +43,11 @@ export default function InvestScreen() {
   const handlePlanChange = React.useCallback((planId: string) => {
     const plan = plans.find(p => p.id === planId);
     setSelectedPlan(plan);
-    if (plan) {
-      setAmount(plan.min_deposit.toString());
+    // Keep current amount or set reasonable default (not $1 which feels too small)
+    if (plan && (!amount || parseFloat(amount) < 1)) {
+      setAmount("500");
     }
-  }, []);
+  }, [amount]);
 
   // Convert amounts for display
   const displayBalance = React.useMemo(() => {
@@ -54,9 +55,9 @@ export default function InvestScreen() {
   }, [user.balance, investmentCurrency]);
 
   const displayMinDeposit = React.useMemo(() => {
-    if (!selectedPlan) return 0;
-    return convertFromUSD(selectedPlan.min_deposit, investmentCurrency);
-  }, [selectedPlan, investmentCurrency]);
+    // Universal $1 minimum, converted to display currency
+    return convertFromUSD(1, investmentCurrency);
+  }, [investmentCurrency]);
 
   const investmentCalculation = React.useMemo(() => {
     if (!selectedPlan || !amount) return null;
@@ -86,7 +87,7 @@ export default function InvestScreen() {
     // Convert to USD for validation
     const amountUSD = investmentCurrency === 'USD' ? numericAmount : convertToUSD(numericAmount, investmentCurrency);
 
-    if (amountUSD < selectedPlan.min_deposit) {
+    if (amountUSD < 1) {
       Alert.alert("Amount Too Low", `Amount must be at least ${formatCurrency(displayMinDeposit, investmentCurrency)}.`);
       return;
     }
