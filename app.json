@@ -29,6 +29,13 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "95318376-73ec-4936-88bb-c83b14ac07a2"
+      }
+    },
+    "owner": "armanmishra1000"
   }
 }
