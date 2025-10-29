@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, ViewStyle, StyleSheet, Platform } from 'react-native';
+import { View, Text, ViewStyle, StyleProp, StyleSheet, Platform } from 'react-native';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Card({ children, style }: CardProps) {
@@ -16,7 +16,7 @@ export function Card({ children, style }: CardProps) {
 
 interface CardHeaderProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function CardHeader({ children, style }: CardHeaderProps) {
@@ -53,7 +53,7 @@ export function CardDescription({ children }: CardDescriptionProps) {
 
 interface CardContentProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function CardContent({ children, style }: CardContentProps) {
@@ -66,7 +66,7 @@ export function CardContent({ children, style }: CardContentProps) {
 
 interface CardFooterProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function CardFooter({ children, style }: CardFooterProps) {

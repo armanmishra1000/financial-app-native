@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { ArrowDownToLine, ArrowUpFromLine, FilterX } from 'lucide-react-native';
 import { useData } from '../../src/context';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
 import { TransactionItem } from '../../src/components/transaction-item';
@@ -12,6 +12,8 @@ import { formatCurrency } from '../../src/lib/utils';
 import { Transaction } from '../../src/lib/data';
 import { isInvestmentLocked, formatLockExpiry } from '../../src/lib/investment-utils';
 import { convertFromUSD, convertToUSD } from '../../src/lib/currency-utils';
+import { spacingScale, typographyScale } from '../../src/constants/layout';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
 type ViewMode = 'Wallet' | 'Retire';
@@ -25,6 +27,25 @@ export default function WalletScreen() {
   const [isLoading, setIsLoading] = React.useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
+  const {
+    horizontalContentPadding,
+    maxContentWidth,
+    isMedium,
+    isExpanded,
+    safeAreaInsets,
+  } = useResponsiveLayout();
+
+  const contentContainerStyle = React.useMemo<StyleProp<ViewStyle>>(
+    () => ({
+      paddingHorizontal: horizontalContentPadding,
+      paddingTop: spacingScale.xl,
+      paddingBottom: spacingScale.xxl + safeAreaInsets.bottom,
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center' as FlexAlignType,
+    }),
+    [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
+  );
 
   React.useEffect(() => {
     Animated.parallel([
@@ -135,8 +156,8 @@ export default function WalletScreen() {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <View style={styles.space}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
+        <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
           <View style={styles.header}>
             <Text style={styles.title}>{viewMode === 'Wallet' ? 'Wallet' : 'Retire'}</Text>
             <Text style={styles.subtitle}>
@@ -163,7 +184,7 @@ export default function WalletScreen() {
           <CardContent>
             {/* Action buttons - Only in Wallet mode */}
             {viewMode === 'Wallet' && (
-              <View style={styles.actionButtons}>
+              <View style={[styles.actionButtons, isMedium ? styles.actionButtonsUnwrapped : null]}>
                 <Button 
                   variant="outline"
                   size="lg"
@@ -302,30 +323,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   content: {
-    padding: 24,
-    paddingBottom: 80,
+    width: '100%',
   },
   space: {
-    gap: 24,
+    gap: spacingScale.lg,
+    width: '100%',
+  },
+  spaceExpanded: {
+    gap: spacingScale.xl,
   },
   header: {
-    gap: 8,
+    gap: spacingScale.xs,
   },
   title: {
-    fontSize: 30,
+    fontSize: typographyScale.headline,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: typographyScale.subtitle,
     color: '#6b7280',
   },
   scrollView: {
     flex: 1,
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#6b7280',
   },
@@ -333,12 +357,16 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: 'bold',
     color: '#111827',
-    marginTop: 4,
+    marginTop: spacingScale.xs,
     letterSpacing: -1.5,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: spacingScale.md,
+  },
+  actionButtonsUnwrapped: {
+    flexWrap: 'nowrap',
   },
   actionButton: {
     flex: 1,
@@ -346,25 +374,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacingScale.xs,
+    paddingVertical: spacingScale.xs,
   },
   actionButtonText: {
     color: '#374151',
     fontWeight: '600',
+    fontSize: typographyScale.bodySmall,
   },
   filterSection: {
-    marginBottom: 16,
+    marginBottom: spacingScale.md,
   },
   filterScroll: {
     flexGrow: 0,
   },
   filterButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacingScale.xs,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacingScale.md,
+    paddingVertical: spacingScale.xs,
     borderRadius: 20,
     backgroundColor: '#f3f4f6',
   },
@@ -372,7 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#374151',
   },
@@ -388,8 +418,8 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    paddingVertical: spacingScale.xxl,
+    paddingHorizontal: spacingScale.lg,
   },
   emptyStateIcon: {
     width: 64,
@@ -398,16 +428,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacingScale.md,
   },
   emptyStateTitle: {
-    fontSize: 18,
+    fontSize: typographyScale.title,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: spacingScale.xs,
   },
   emptyStateDescription: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
     textAlign: 'center',
   },
@@ -416,39 +446,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   modalHeader: {
-    padding: 24,
+    padding: spacingScale.lg,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: typographyScale.headline,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: spacingScale.xs,
   },
   modalDescription: {
-    fontSize: 16,
+    fontSize: typographyScale.body,
     color: '#6b7280',
     lineHeight: 24,
   },
   modalContent: {
-    padding: 24,
+    padding: spacingScale.lg,
   },
   inputSection: {
-    gap: 8,
+    gap: spacingScale.xs,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: typographyScale.body,
     fontWeight: '500',
     color: '#111827',
   },
   amountInput: {
-    marginTop: 4,
+    marginTop: spacingScale.xs,
   },
   modalFooter: {
     flexDirection: 'row',
-    gap: 16,
-    padding: 24,
+    gap: spacingScale.md,
+    padding: spacingScale.lg,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
   },

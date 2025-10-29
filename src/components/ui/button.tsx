@@ -24,6 +24,10 @@ export function Button({
   disabled = false 
 }: ButtonProps) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const childArray = React.Children.toArray(children);
+  const hasOnlyTextChildren = childArray.every(
+    (child) => typeof child === 'string' || typeof child === 'number'
+  );
   
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -157,14 +161,46 @@ export function Button({
         disabled={disabled}
         activeOpacity={0.7}
       >
-        <Text style={[
-          styles.buttonText,
-          getTextStyles(),
-          getTextSizeStyles(),
-          textStyle
-        ]}>
-          {children}
-        </Text>
+        {hasOnlyTextChildren ? (
+          <Text
+            style={[
+              styles.buttonText,
+              getTextStyles(),
+              getTextSizeStyles(),
+              textStyle
+            ]}
+          >
+            {children}
+          </Text>
+        ) : (
+          childArray.map((child, index) => {
+            if (typeof child === 'string' || typeof child === 'number') {
+              return (
+                <Text
+                  key={`button-text-${index}`}
+                  style={[
+                    styles.buttonText,
+                    getTextStyles(),
+                    getTextSizeStyles(),
+                    textStyle
+                  ]}
+                >
+                  {child}
+                </Text>
+              );
+            }
+
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child, { key: `button-node-${index}` });
+            }
+
+            return (
+              <React.Fragment key={`button-fragment-${index}`}>
+                {child}
+              </React.Fragment>
+            );
+          })
+        )}
       </TouchableOpacity>
     </Animated.View>
   );

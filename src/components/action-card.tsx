@@ -2,6 +2,9 @@ import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Animated } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
 
+import { spacingScale, typographyScale } from '../constants/layout';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+
 interface ActionCardProps {
   href?: string;
   icon: LucideIcon;
@@ -10,7 +13,16 @@ interface ActionCardProps {
 }
 
 export function ActionCard({ href, icon: Icon, title, onPress }: ActionCardProps) {
+  const { isMedium, isExpanded } = useResponsiveLayout();
   const animatedValue = React.useRef(new Animated.Value(1)).current;
+
+  const layoutStyles = React.useMemo(
+    () => [
+      (isMedium || isExpanded) ? styles.cardResponsive : styles.cardFullWidth,
+      isExpanded ? styles.cardExpanded : null,
+    ],
+    [isMedium, isExpanded],
+  );
 
   const handlePressIn = () => {
     Animated.timing(animatedValue, {
@@ -44,7 +56,7 @@ export function ActionCard({ href, icon: Icon, title, onPress }: ActionCardProps
   };
 
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale: animatedValue }] }]}>
+    <Animated.View style={[styles.card, ...layoutStyles, { transform: [{ scale: animatedValue }] }]}>
       <TouchableOpacity
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -67,26 +79,37 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    height: 112,
+    minHeight: 112,
     overflow: 'hidden',
+    flexGrow: 1,
+  },
+  cardFullWidth: {
+    width: '100%',
+  },
+  cardResponsive: {
+    flex: 1,
+    minWidth: 200,
+  },
+  cardExpanded: {
+    maxWidth: 320,
   },
   touchable: {
     flex: 1,
-    padding: 16,
+    padding: spacingScale.md,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
   content: {
     alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacingScale.xs,
     flex: 1,
   },
   icon: {
     // No margin needed, gap handles spacing
   },
   title: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '600',
     color: '#3b82f6',
     textAlign: 'left',

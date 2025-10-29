@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated, Easing } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useData, useAuth } from '../../src/context';
+import { useData } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
@@ -9,8 +9,10 @@ import { Select } from '../../src/components/ui/select';
 import { CurrencyToggle } from '../../src/components/ui/currency-toggle';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
-import { calculateDailyRate, calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
+import { calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
 import { convertFromUSD, convertToUSD, getExchangeRateString } from '../../src/lib/currency-utils';
+import { spacingScale, typographyScale } from '../../src/constants/layout';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 export default function InvestScreen() {
   const router = useRouter();
@@ -23,6 +25,25 @@ export default function InvestScreen() {
   
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
+  const {
+    horizontalContentPadding,
+    maxContentWidth,
+    isMedium,
+    isExpanded,
+    safeAreaInsets,
+  } = useResponsiveLayout();
+
+  const contentContainerStyle = React.useMemo<StyleProp<ViewStyle>>(
+    () => ({
+      paddingHorizontal: horizontalContentPadding,
+      paddingTop: spacingScale.xl,
+      paddingBottom: spacingScale.xxl + safeAreaInsets.bottom,
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center' as FlexAlignType,
+    }),
+    [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
+  );
 
   React.useEffect(() => {
     Animated.parallel([
@@ -167,8 +188,8 @@ export default function InvestScreen() {
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <View style={styles.space}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
+        <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
           <View style={styles.header}>
             <Text style={styles.title}>Make an Investment</Text>
             <Text style={styles.subtitle}>Choose a plan and enter an amount to invest.</Text>
@@ -179,7 +200,7 @@ export default function InvestScreen() {
               <CardTitle>Investment Details</CardTitle>
               <CardDescription>Review your investment and estimated returns below.</CardDescription>
             </CardHeader>
-            <CardContent style={styles.cardContent}>
+            <CardContent style={[styles.cardContent, (isMedium || isExpanded) ? styles.cardContentWide : null]}>
               <View style={styles.formSpace}>
                 <Select
                   label="Investment Plan"
@@ -225,7 +246,7 @@ export default function InvestScreen() {
                 </View>
               </View>
 
-              <View style={styles.summarySection}>
+              <View style={[styles.summarySection, (isMedium || isExpanded) ? styles.summarySectionWide : null]}>
                 <Text style={styles.summaryTitle}>Summary</Text>
                 
                 {/* Investment Details */}
@@ -323,74 +344,90 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
-    paddingBottom: 80,
+    width: '100%',
   },
   space: {
-    gap: 24,
+    gap: spacingScale.lg,
+    width: '100%',
+  },
+  spaceExpanded: {
+    gap: spacingScale.xl,
   },
   header: {
-    gap: 8,
+    gap: spacingScale.xs,
   },
   title: {
-    fontSize: 30,
+    fontSize: typographyScale.headline,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: typographyScale.subtitle,
     color: '#6b7280',
   },
   cardContent: {
-    gap: 24,
+    gap: spacingScale.lg,
+  },
+  cardContentWide: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacingScale.xl,
   },
   formSpace: {
-    gap: 20,
+    gap: spacingScale.lg,
+    flex: 1,
   },
   amountSection: {
-    gap: 8,
+    gap: spacingScale.xs,
   },
   amountHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacingScale.xs,
   },
   amountLabel: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#374151',
   },
   balanceText: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
   },
   helperText: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
   },
   currencySection: {
-    gap: 12,
+    gap: spacingScale.sm,
   },
   currencyLabel: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#374151',
   },
   exchangeRateText: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: spacingScale.xs,
   },
   summarySection: {
     backgroundColor: 'rgba(243, 244, 246, 0.5)',
-    padding: 16,
-    borderRadius: 8,
-    gap: 12,
+    padding: spacingScale.md,
+    borderRadius: spacingScale.xs,
+    gap: spacingScale.sm,
+  },
+  summarySectionWide: {
+    flex: 1,
+    maxWidth: 420,
+    alignSelf: 'stretch',
   },
   summaryTitle: {
-    fontSize: 16,
+    fontSize: typographyScale.subtitle,
     fontWeight: '600',
     color: '#111827',
     letterSpacing: -0.3,
@@ -401,51 +438,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
   },
   summaryValue: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#111827',
   },
   profitValue: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#059669',
   },
   summaryDivider: {
     height: 1,
     backgroundColor: '#e5e7eb',
-    marginVertical: 4,
+    marginVertical: spacingScale.xs,
   },
   totalLabel: {
-    fontSize: 18,
+    fontSize: typographyScale.title,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   totalValue: {
-    fontSize: 18,
+    fontSize: typographyScale.title,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   confirmButton: {
-    marginTop: 8,
+    marginTop: spacingScale.sm,
   },
   breakdownSection: {
-    marginTop: 16,
-    padding: 12,
+    marginTop: spacingScale.md,
+    padding: spacingScale.sm,
     backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    borderRadius: 8,
-    gap: 8,
+    borderRadius: spacingScale.xs,
+    gap: spacingScale.xs,
   },
   breakdownTitle: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '600',
     color: '#3b82f6',
-    marginBottom: 4,
+    marginBottom: spacingScale.xs,
   },
   breakdownRow: {
     flexDirection: 'row',
@@ -453,38 +490,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   breakdownLabel: {
-    fontSize: 13,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
   },
   breakdownValue: {
-    fontSize: 13,
+    fontSize: typographyScale.caption,
     fontWeight: '500',
     color: '#111827',
   },
   breakdownDivider: {
     height: 1,
     backgroundColor: '#e5e7eb',
-    marginVertical: 4,
+    marginVertical: spacingScale.xs,
   },
   breakdownTotalLabel: {
-    fontSize: 13,
+    fontSize: typographyScale.caption,
     fontWeight: '600',
     color: '#3b82f6',
   },
   breakdownTotalValue: {
-    fontSize: 13,
+    fontSize: typographyScale.caption,
     fontWeight: '600',
     color: '#3b82f6',
   },
   compoundSection: {
-    marginTop: 16,
-    gap: 8,
+    marginTop: spacingScale.md,
+    gap: spacingScale.xs,
   },
   compoundTitle: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '600',
     color: '#059669',
-    marginBottom: 4,
+    marginBottom: spacingScale.xs,
   },
   compoundRow: {
     flexDirection: 'row',
@@ -492,29 +529,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   compoundLabel: {
-    fontSize: 13,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
   },
   compoundValue: {
-    fontSize: 13,
+    fontSize: typographyScale.caption,
     fontWeight: '500',
     color: '#059669',
   },
   lockWarning: {
-    marginTop: 16,
-    padding: 12,
+    marginTop: spacingScale.md,
+    padding: spacingScale.sm,
     backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    borderRadius: 8,
-    gap: 6,
+    borderRadius: spacingScale.xs,
+    gap: spacingScale.xs,
   },
   lockWarningTitle: {
-    fontSize: 13,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '600',
     color: '#d97706',
   },
   lockWarningText: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     color: '#92400e',
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });

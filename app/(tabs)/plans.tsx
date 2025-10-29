@@ -1,30 +1,32 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, DollarSign, ArrowRight } from 'lucide-react-native';
+import { Calendar, ArrowRight } from 'lucide-react-native';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Badge } from '../../src/components/ui/badge';
 import { plans, Plan } from '../../src/lib/data';
-import { formatCurrency } from '../../src/lib/utils';
 import { calculateDailyRate, formatDailyRate, getROIBreakdown } from '../../src/lib/investment-utils';
-import { convertFromUSD } from '../../src/lib/currency-utils';
 import { useData } from '../../src/context';
+import { spacingScale, typographyScale } from '../../src/constants/layout';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 interface PlanCardProps {
   plan: Plan;
   recommended?: boolean;
   onPress: () => void;
   displayCurrency?: string;
+  isWideLayout?: boolean;
 }
 
-const PlanCard = ({ plan, recommended, onPress, displayCurrency = 'USD' }: PlanCardProps) => {
+const PlanCard = ({ plan, recommended, onPress, displayCurrency = 'USD', isWideLayout = false }: PlanCardProps) => {
   const dailyRate = calculateDailyRate(plan.roi_percent);
   const roiBreakdown = getROIBreakdown(plan.roi_percent);
+  const cardLayoutStyle = isWideLayout ? styles.planCardWide : styles.planCardFull;
   
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Card style={recommended ? styles.planCardRecommended : styles.planCard}>
+      <Card style={[styles.planCard, recommended ? styles.planCardRecommended : null, cardLayoutStyle]}>
         <CardHeader>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderLeft}>
@@ -80,6 +82,25 @@ export default function PlansScreen() {
   const { user } = useData();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
+  const {
+    horizontalContentPadding,
+    maxContentWidth,
+    isMedium,
+    isExpanded,
+    safeAreaInsets,
+  } = useResponsiveLayout();
+
+  const contentContainerStyle = React.useMemo<StyleProp<ViewStyle>>(
+    () => ({
+      paddingHorizontal: horizontalContentPadding,
+      paddingTop: spacingScale.xl,
+      paddingBottom: spacingScale.xxl + safeAreaInsets.bottom,
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center' as FlexAlignType,
+    }),
+    [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
+  );
 
   React.useEffect(() => {
     Animated.parallel([
@@ -103,14 +124,14 @@ export default function PlansScreen() {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <View style={styles.space}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
+        <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
           <View style={styles.header}>
             <Text style={styles.title}>Investment Plans</Text>
             <Text style={styles.subtitle}>Explore our plans to grow your savings.</Text>
           </View>
           
-          <View style={styles.plansList}>
+          <View style={[styles.plansList, (isMedium || isExpanded) ? styles.plansListWide : null]}>
             {plans.map((plan, index) => (
               <PlanCard
                 key={plan.id}
@@ -118,6 +139,7 @@ export default function PlansScreen() {
                 recommended={index === 1}
                 onPress={() => handleInvestPress(plan.id)}
                 displayCurrency={user.displayCurrency}
+                isWideLayout={isMedium || isExpanded}
               />
             ))}
           </View>
@@ -133,33 +155,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   content: {
-    padding: 24,
-    paddingBottom: 80,
+    width: '100%',
   },
   space: {
-    gap: 24,
+    gap: spacingScale.lg,
+    width: '100%',
+  },
+  spaceExpanded: {
+    gap: spacingScale.xl,
   },
   header: {
-    gap: 8,
+    gap: spacingScale.xs,
   },
   title: {
-    fontSize: 30,
+    fontSize: typographyScale.headline,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: typographyScale.subtitle,
     color: '#6b7280',
   },
   scrollView: {
     flex: 1,
   },
   plansList: {
-    gap: 16,
+    gap: spacingScale.md,
+  },
+  plansListWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   planCard: {
-    padding: 20,
+    padding: spacingScale.lg,
+  },
+  planCardFull: {
+    width: '100%',
+  },
+  planCardWide: {
+    flex: 1,
+    minWidth: 280,
+    maxWidth: 420,
   },
   planCardRecommended: {
     borderWidth: 2,
@@ -180,13 +217,13 @@ const styles = StyleSheet.create({
   },
   
   cardContent: {
-    gap: 20,
+    gap: spacingScale.md,
     paddingTop: 0,
   },
   roiSection: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 8,
+    gap: spacingScale.xs,
   },
   roiPercentage: {
     fontSize: 48,
@@ -195,22 +232,22 @@ const styles = StyleSheet.create({
     letterSpacing: -1.5,
   },
   roiLabel: {
-    fontSize: 16,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
   },
   detailsSection: {
-    gap: 12,
+    gap: spacingScale.sm,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    paddingTop: 16,
+    paddingTop: spacingScale.md,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacingScale.xs,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
   },
   detailTextBold: {
@@ -230,23 +267,23 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
   },
   dailyRate: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#059669',
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: spacingScale.xs,
   },
   breakdownSection: {
     backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    padding: 12,
-    borderRadius: 8,
-    gap: 6,
-    marginVertical: 12,
+    padding: spacingScale.sm,
+    borderRadius: spacingScale.xs,
+    gap: spacingScale.xs,
+    marginVertical: spacingScale.sm,
   },
   breakdownTitle: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     fontWeight: '600',
     color: '#3b82f6',
-    marginBottom: 2,
+    marginBottom: spacingScale.xs,
   },
   breakdownRow: {
     flexDirection: 'row',
@@ -254,11 +291,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   breakdownLabel: {
-    fontSize: 11,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
   },
   breakdownValue: {
-    fontSize: 11,
+    fontSize: typographyScale.caption,
     fontWeight: '500',
     color: '#111827',
   },

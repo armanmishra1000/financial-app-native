@@ -6,6 +6,7 @@ import { Briefcase, Wallet, BarChart2 } from 'lucide-react-native';
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { convertFromUSD } from '../lib/currency-utils';
+import { spacingScale, typographyScale } from '../constants/layout';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -65,17 +66,17 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacingScale.md,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: spacingScale.xs,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: spacingScale.md,
   },
   iconContainerPositive: {
     backgroundColor: '#d1fae5',
@@ -89,21 +90,21 @@ const styles = StyleSheet.create({
   description: {
     fontWeight: '600',
     color: '#111827',
-    fontSize: 16,
+    fontSize: typographyScale.body,
   },
   metadata: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    gap: spacingScale.xs,
+    marginTop: spacingScale.xs,
   },
   date: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
   },
   amount: {
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: typographyScale.body,
     textAlign: 'right',
   },
   amountPositive: {

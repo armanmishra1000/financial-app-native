@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Bell, CreditCard, Shield, FileText, HelpCircle, LogOut, SunMoon, Globe } from 'lucide-react-native';
 import { useData, useAuth } from '../../src/context';
@@ -9,6 +9,10 @@ import { Avatar } from '../../src/components/ui/avatar';
 import { Switch } from '../../src/components/ui/switch';
 import { Select } from '../../src/components/ui/select';
 import { getSupportedCurrencyCodes, getCurrencyDisplayName } from '../../src/lib/currency-utils';
+import { spacingScale, typographyScale } from '../../src/constants/layout';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
+
+type MenuIcon = React.ComponentType<{ size?: number; color?: string }>;
 
 export default function ProfileScreen() {
   const { user, setDisplayCurrency } = useData();
@@ -18,6 +22,24 @@ export default function ProfileScreen() {
   const [isComingSoonOpen, setIsComingSoonOpen] = React.useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
+  const {
+    horizontalContentPadding,
+    maxContentWidth,
+    isExpanded,
+    safeAreaInsets,
+  } = useResponsiveLayout();
+
+  const contentContainerStyle = React.useMemo<StyleProp<ViewStyle>>(
+    () => ({
+      paddingHorizontal: horizontalContentPadding,
+      paddingTop: spacingScale.xl,
+      paddingBottom: spacingScale.xxl + safeAreaInsets.bottom,
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center' as FlexAlignType,
+    }),
+    [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
+  );
 
   React.useEffect(() => {
     Animated.parallel([
@@ -71,7 +93,7 @@ export default function ProfileScreen() {
     setIsComingSoonOpen(true);
   };
 
-  const ProfileMenuItem = ({ icon: Icon, label, onPress }: { icon: any, label: string, onPress: () => void }) => (
+  const ProfileMenuItem = ({ icon: Icon, label, onPress }: { icon: MenuIcon; label: string; onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={styles.menuItem}>
       <View style={styles.menuItemIcon}>
         <Icon size={20} color="#6b7280" />
@@ -83,8 +105,8 @@ export default function ProfileScreen() {
   return (
     <>
       <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          <View style={styles.space}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
+          <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
             <Card>
               <CardContent style={styles.profileCard}>
                 <Avatar
@@ -220,101 +242,106 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   content: {
-    padding: 24,
-    paddingBottom: 80,
+    width: '100%',
   },
   space: {
-    gap: 24,
+    gap: spacingScale.lg,
+    width: '100%',
+  },
+  spaceExpanded: {
+    gap: spacingScale.xl,
   },
   profileCard: {
     alignItems: 'center',
-    paddingVertical: 24,
-    gap: 16,
+    paddingVertical: spacingScale.xl,
+    gap: spacingScale.md,
   },
   userName: {
-    fontSize: 24,
+    fontSize: typographyScale.title,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.3,
   },
   userDescription: {
-    fontSize: 16,
+    fontSize: typographyScale.body,
     color: '#6b7280',
     textAlign: 'center',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacingScale.sm,
   },
   menuItemIcon: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: spacingScale.xs,
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: spacingScale.md,
   },
   menuItemLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: typographyScale.body,
     fontWeight: '500',
     color: '#111827',
   },
   menuItemContent: {
     flex: 1,
     flexDirection: 'column',
-    gap: 8,
+    gap: spacingScale.xs,
   },
   currencySelect: {
-    marginTop: 4,
+    marginTop: spacingScale.xs,
   },
   menuItemSeparator: {
     height: 1,
     backgroundColor: '#e5e7eb',
-    marginVertical: 4,
+    marginVertical: spacingScale.xs,
   },
   logoutButton: {
     backgroundColor: '#f3f4f6',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacingScale.xs,
+    paddingVertical: spacingScale.xs,
   },
   logoutButtonText: {
     color: '#374151',
     fontWeight: '600',
+    fontSize: typographyScale.bodySmall,
   },
   comingSoonOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacingScale.lg,
   },
   comingSoonModal: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 24,
+    padding: spacingScale.lg,
     alignItems: 'center',
-    gap: 16,
+    gap: spacingScale.md,
     maxWidth: 320,
     width: '100%',
   },
   comingSoonTitle: {
-    fontSize: 20,
+    fontSize: typographyScale.title,
     fontWeight: 'bold',
     color: '#111827',
   },
   comingSoonDescription: {
-    fontSize: 16,
+    fontSize: typographyScale.body,
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 24,
   },
   comingSoonButton: {
-    marginTop: 8,
+    marginTop: spacingScale.sm,
   },
   scrollView: {
     flex: 1,

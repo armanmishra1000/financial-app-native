@@ -1,22 +1,24 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Animated, Easing } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff, ArrowUpRight } from 'lucide-react-native';
 
 import { useData, useAppState } from '../../src/context';
 import { useInvestmentCalculations } from '../../src/hooks/useInvestmentCalculations';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../../src/components/ui/card';
+import { Card, CardHeader, CardContent } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Avatar } from '../../src/components/ui/avatar';
 import { TransactionItem } from '../../src/components/transaction-item';
 import { ActionCard } from '../../src/components/action-card';
 import { BalanceChart } from '../../src/components/balance-chart';
 import { formatCurrency } from '../../src/lib/utils';
-import { plans, Plan } from '../../src/lib/data';
+import { plans, Plan, Investment } from '../../src/lib/data';
 import { HomePageSkeleton } from '../../src/components/home-page-skeleton';
 import { Briefcase, BarChart2, Wallet, TrendingUp, Clock, Lock, Unlock } from 'lucide-react-native';
-import { calculateCurrentValue, calculateDailyRate, calculateDaysRemaining, calculateProgress, isInvestmentLocked, getDaysUntilUnlock, formatLockExpiry } from '../../src/lib/investment-utils';
+import { calculateDaysRemaining, calculateProgress, isInvestmentLocked, getDaysUntilUnlock, formatLockExpiry } from '../../src/lib/investment-utils';
 import { convertFromUSD } from '../../src/lib/currency-utils';
+import { spacingScale, typographyScale } from '../../src/constants/layout';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 export default function HomeScreen() {
   const { user, transactions, investments } = useData();
@@ -26,6 +28,37 @@ export default function HomeScreen() {
   const [isBalanceVisible, setIsBalanceVisible] = React.useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
+  const {
+    horizontalContentPadding,
+    maxContentWidth,
+    isMedium,
+    isExpanded,
+    safeAreaInsets,
+  } = useResponsiveLayout();
+
+  const contentContainerStyle = React.useMemo<StyleProp<ViewStyle>>(
+    () => ({
+      paddingHorizontal: horizontalContentPadding,
+      paddingTop: spacingScale.xl,
+      paddingBottom: spacingScale.xxl + safeAreaInsets.bottom,
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center' as FlexAlignType,
+    }),
+    [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
+  );
+  const formattedBalance = React.useMemo(
+    () => formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency),
+    [user.balance, user.displayCurrency]
+  );
+  const maskedBalance = React.useMemo(
+    () => formattedBalance.replace(/[0-9.,]/g, '•'),
+    [formattedBalance]
+  );
+  const activeInvestments = React.useMemo(
+    () => investments.filter(inv => inv.status === 'Active'),
+    [investments]
+  );
 
   React.useEffect(() => {
     Animated.parallel([
@@ -53,7 +86,8 @@ export default function HomeScreen() {
     .join("");
 
   // Active Investment Card Component
-  const ActiveInvestmentCard = ({ investment }: { investment: any }) => {
+  const ActiveInvestmentCard = ({ investment }: { investment: Investment }) => {
+    const cardLayoutStyle = isMedium ? styles.investmentCardWide : styles.investmentCardFull;
     const currentValue = getInvestmentCurrentValue(investment.id);
     const profit = currentValue - investment.amount;
     const profitPercent = ((profit / investment.amount) * 100);
@@ -73,7 +107,7 @@ export default function HomeScreen() {
     const displayProfit = convertFromUSD(profit, user.displayCurrency);
     
     return (
-      <Card style={styles.investmentCard}>
+      <Card style={[styles.investmentCard, cardLayoutStyle]}>
         <CardContent style={styles.investmentCardContent}>
           <View style={styles.investmentHeader}>
             <View>
@@ -162,8 +196,8 @@ export default function HomeScreen() {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-      <View style={styles.space}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
+      <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Welcome, {user.name.split(' ')[0]}!</Text>
@@ -193,14 +227,11 @@ export default function HomeScreen() {
           <CardContent>
             <View style={styles.balanceAmountContainer}>
               <View style={[
-                styles.balanceBlurContainer,
-                !isBalanceVisible && styles.balanceBlurred
+                styles.balanceValueWrapper,
+                !isBalanceVisible && styles.balanceValueHidden
               ]}>
-                <Text style={[
-                  styles.balanceAmount,
-                  !isBalanceVisible && styles.balanceHidden
-                ]}>
-                  {formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}
+                <Text style={styles.balanceAmount}>
+                  {isBalanceVisible ? formattedBalance : maskedBalance}
                 </Text>
               </View>
             </View>
@@ -233,25 +264,35 @@ export default function HomeScreen() {
         )}
 
         {/* Active Investments Section */}
-        {investments.filter(inv => inv.status === 'Active').length > 0 && (
-          <View>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Active Investments</Text>
-              <TrendingUp size={20} color="#059669" />
-            </View>
-            <View style={styles.investmentsList}>
-              {investments
-                .filter(inv => inv.status === 'Active')
-                .map(investment => (
-                  <ActiveInvestmentCard key={investment.id} investment={investment} />
-                ))}
-            </View>
+        <View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Active Investments</Text>
+            <TrendingUp size={20} color="#059669" />
           </View>
-        )}
+          {activeInvestments.length > 0 ? (
+            <View style={[styles.investmentsList, (isMedium || isExpanded) ? styles.investmentsListWide : null]}>
+              {activeInvestments.map(investment => (
+                <ActiveInvestmentCard key={investment.id} investment={investment} />
+              ))}
+            </View>
+          ) : (
+            <Card>
+              <CardContent style={styles.investmentsEmptyContent}>
+                <Text style={styles.investmentsEmptyTitle}>No active investments yet</Text>
+                <Text style={styles.investmentsEmptyDescription}>
+                  Start growing your balance by creating an investment plan.
+                </Text>
+                <Button size="sm" variant="outline" onPress={() => router.push('/invest')}>
+                  Explore Plans
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </View>
 
         <View>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsGrid}>
+          <View style={[styles.actionsGrid, isMedium ? styles.actionsGridWide : null]}>
             <ActionCard href="/invest" icon={Briefcase} title="Invest" />
             <ActionCard href="/plans" icon={BarChart2} title="Plans" />
             <ActionCard href="/wallet" icon={Wallet} title="Wallet" />
@@ -268,12 +309,14 @@ export default function HomeScreen() {
                 <TransactionItem key={tx.id} transaction={tx} displayCurrency={user.displayCurrency} />
               ))}
             </View>
-            <Button 
-              variant="link"
-              onPress={() => router.push('/wallet')}
-            >
-              View All
-            </Button>
+            <View style={styles.transactionsFooter}>
+              <Button 
+                variant="link"
+                onPress={() => router.push('/wallet')}
+              >
+                View All
+              </Button>
+            </View>
           </CardContent>
         </Card>
       </View>
@@ -291,14 +334,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
-    paddingBottom: 80,
+    width: '100%',
   },
   space: {
-    gap: 24,
+    gap: spacingScale.lg,
+    width: '100%',
+  },
+  spaceExpanded: {
+    gap: spacingScale.xl,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: typographyScale.body,
     color: '#6b7280',
     textAlign: 'center',
   },
@@ -308,15 +354,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 30,
+    fontSize: typographyScale.headline,
     fontWeight: 'bold',
     color: '#111827',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: typographyScale.subtitle,
     color: '#6b7280',
-    marginTop: 4,
+    marginTop: spacingScale.xs,
   },
 
   balanceHeader: {
@@ -325,7 +371,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   balanceTitle: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '500',
     color: '#6b7280',
   },
@@ -338,7 +384,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   balanceAmountContainer: {
-    marginTop: 8,
+    marginTop: spacingScale.xs,
   },
   balanceAmount: {
     fontSize: 48,
@@ -346,38 +392,46 @@ const styles = StyleSheet.create({
     color: '#111827',
     letterSpacing: -1.5,
   },
-  balanceBlurContainer: {
-    overflow: 'hidden',
+  balanceValueWrapper: {
+    borderRadius: spacingScale.sm,
+    paddingHorizontal: spacingScale.xs,
+    paddingVertical: spacingScale.xs,
   },
-  balanceBlurred: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  balanceHidden: {
-    opacity: 0.1,
+  balanceValueHidden: {
+    backgroundColor: '#f3f4f6',
   },
   balanceChange: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: spacingScale.xs,
   },
   balanceChangeText: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#059669',
-    marginLeft: 4,
+    marginLeft: spacingScale.xs,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: typographyScale.title,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 16,
+    marginBottom: spacingScale.md,
     letterSpacing: -0.3,
   },
   actionsGrid: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacingScale.md,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionsGridWide: {
+    justifyContent: 'flex-start',
   },
   transactionsList: {
     gap: 0,
+  },
+  transactionsFooter: {
+    marginTop: spacingScale.sm,
+    alignItems: 'flex-end',
   },
   
   chartPlaceholder: {
@@ -385,10 +439,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f9fafb',
-    borderRadius: 8,
+    borderRadius: spacingScale.xs,
   },
   chartPlaceholderText: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
     textAlign: 'center',
   },
@@ -396,19 +450,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacingScale.md,
   },
   investmentsList: {
-    gap: 16,
+    gap: spacingScale.md,
+  },
+  investmentsListWide: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  investmentsEmptyContent: {
+    gap: spacingScale.sm,
+  },
+  investmentsEmptyTitle: {
+    fontSize: typographyScale.subtitle,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  investmentsEmptyDescription: {
+    fontSize: typographyScale.bodySmall,
+    color: '#6b7280',
+    lineHeight: 20,
   },
   investmentCard: {
-    padding: 16,
+    padding: spacingScale.md,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    borderRadius: spacingScale.sm,
+    flex: 1,
+  },
+  investmentCardFull: {
+    width: '100%',
+  },
+  investmentCardWide: {
+    flex: 1,
+    minWidth: 280,
+    maxWidth: 420,
   },
   investmentCardContent: {
-    gap: 16,
+    gap: spacingScale.md,
   },
   investmentHeader: {
     flexDirection: 'row',
@@ -416,24 +497,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   investmentTitle: {
-    fontSize: 16,
+    fontSize: typographyScale.subtitle,
     fontWeight: '600',
     color: '#111827',
     letterSpacing: -0.3,
   },
   investmentSubtitle: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
     marginTop: 2,
   },
   investmentStatus: {
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: spacingScale.xs,
+    paddingVertical: spacingScale.xxs,
+    borderRadius: spacingScale.lg,
   },
   investmentStatusText: {
-    fontSize: 10,
+    fontSize: typographyScale.caption,
     fontWeight: '500',
     color: '#22c55e',
   },
@@ -441,18 +522,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacingScale.sm,
   },
   investmentMetric: {
     alignItems: 'center',
     flex: 1,
+    minWidth: 120,
   },
   investmentMetricLabel: {
-    fontSize: 11,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
-    marginBottom: 4,
+    marginBottom: spacingScale.xs,
   },
   investmentMetricValue: {
-    fontSize: 14,
+    fontSize: typographyScale.bodySmall,
     fontWeight: '600',
     color: '#111827',
     letterSpacing: -0.2,
@@ -461,8 +545,8 @@ const styles = StyleSheet.create({
     color: '#059669',
   },
   profitPercent: {
-    fontSize: 10,
-    marginTop: 2,
+    fontSize: typographyScale.caption,
+    marginTop: spacingScale.xxs,
   },
   profitPositive: {
     color: '#059669',
@@ -471,15 +555,15 @@ const styles = StyleSheet.create({
     color: '#dc2626',
   },
   investmentProgress: {
-    gap: 8,
+    gap: spacingScale.xs,
   },
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacingScale.xs,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
   },
   progressBar: {
@@ -494,40 +578,40 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressPercent: {
-    fontSize: 11,
+    fontSize: typographyScale.caption,
     color: '#6b7280',
     textAlign: 'center',
   },
   lockStatus: {
     backgroundColor: 'rgba(243, 244, 246, 0.5)',
-    padding: 12,
-    borderRadius: 8,
-    gap: 6,
+    padding: spacingScale.sm,
+    borderRadius: spacingScale.xs,
+    gap: spacingScale.xs,
   },
   lockStatusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacingScale.xs,
   },
   lockStatusTextLocked: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     fontWeight: '600',
     color: '#dc2626',
   },
   lockStatusTextUnlocked: {
-    fontSize: 12,
+    fontSize: typographyScale.caption,
     fontWeight: '600',
     color: '#059669',
   },
   lockStatusDescription: {
-    fontSize: 11,
+    fontSize: typographyScale.bodySmall,
     color: '#6b7280',
-    marginLeft: 20,
+    marginLeft: spacingScale.lg,
   },
   lockStatusDays: {
-    fontSize: 10,
+    fontSize: typographyScale.caption,
     color: '#dc2626',
-    marginLeft: 20,
+    marginLeft: spacingScale.lg,
     fontWeight: '500',
   },
 });
