@@ -180,10 +180,20 @@ export default function InvestScreen() {
     }, 500);
   };
 
-  const planItems = plans.map(plan => ({
-    label: `${plan.name} (${plan.roi_percent}% ROI)`,
-    value: plan.id
-  }));
+  const planItems = React.useMemo(() => (
+    plans.map((plan) => {
+      const minimumDepositDisplay = formatCurrency(
+        convertFromUSD(plan.min_deposit, investmentCurrency),
+        investmentCurrency,
+      );
+
+      return {
+        label: plan.name,
+        value: plan.id,
+        description: `${plan.roi_percent}% ROI • ${plan.duration_days} days • Min ${minimumDepositDisplay}`,
+      };
+    })
+  ), [investmentCurrency]);
 
   return (
     <Animated.View
@@ -217,6 +227,8 @@ export default function InvestScreen() {
                   onValueChange={handlePlanChange}
                   items={planItems}
                   placeholder="Select a plan"
+                  modalTitle="Select Investment Plan"
+                  helperText="Compare each plan’s ROI, duration, and minimum deposit."
                 />
 
                 <View style={styles.amountSection}>

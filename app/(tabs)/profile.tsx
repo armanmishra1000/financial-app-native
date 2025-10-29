@@ -8,7 +8,7 @@ import { Button } from '../../src/components/ui/button';
 import { Avatar } from '../../src/components/ui/avatar';
 import { Switch } from '../../src/components/ui/switch';
 import { Select } from '../../src/components/ui/select';
-import { getSupportedCurrencyCodes, getCurrencyDisplayName } from '../../src/lib/currency-utils';
+import { getSupportedCurrencyCodes, getCurrencyDisplayName, getCurrencyInfo } from '../../src/lib/currency-utils';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
 import type { ThemeColors } from '../../src/theme/colors';
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
@@ -172,11 +172,18 @@ export default function ProfileScreen() {
                     <Select
                       value={user.displayCurrency}
                       onValueChange={setDisplayCurrency}
-                      items={getSupportedCurrencyCodes().map(code => ({
-                        label: getCurrencyDisplayName(code),
-                        value: code
-                      }))}
+                      items={getSupportedCurrencyCodes().map((code) => {
+                        const info = getCurrencyInfo(code);
+                        return {
+                          label: getCurrencyDisplayName(code),
+                          value: code,
+                          description: info?.name,
+                        };
+                      })}
                       placeholder="Select currency"
+                      modalTitle="Preferred Display Currency"
+                      helperText="Applies across balances and transactions."
+                      style={styles.currencySelect}
                     />
                   </View>
                 </View>
@@ -298,6 +305,7 @@ const styles = StyleSheet.create({
   },
   currencySelect: {
     marginTop: spacingScale.xs,
+    width: '100%',
   },
   menuItemSeparator: {
     height: 1,
