@@ -12,7 +12,7 @@ import { TransactionItem } from '../../src/components/transaction-item';
 import { ActionCard } from '../../src/components/action-card';
 import { BalanceChart } from '../../src/components/balance-chart';
 import { formatCurrency } from '../../src/lib/utils';
-import { plans, Plan, Investment } from '../../src/lib/data';
+import { Investment, getPlanById } from '../../src/lib/data';
 import { HomePageSkeleton } from '../../src/components/home-page-skeleton';
 import { Briefcase, BarChart2, Wallet, TrendingUp, Clock, Lock, Unlock } from 'lucide-react-native';
 import { calculateDaysRemaining, calculateProgress, isInvestmentLocked, getDaysUntilUnlock, formatLockExpiry } from '../../src/lib/investment-utils';
@@ -96,7 +96,7 @@ export default function HomeScreen() {
     const profitPercent = ((profit / investment.amount) * 100);
     
     // Get plan details
-    const plan = plans.find((p: Plan) => p.id === investment.planId);
+    const plan = getPlanById(investment.planId);
     const daysRemaining = plan ? calculateDaysRemaining(investment.startDate, plan.duration_days) : 0;
     const progress = plan ? calculateProgress(investment.startDate, plan.duration_days) : 0;
     

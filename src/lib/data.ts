@@ -86,6 +86,13 @@ export const plans: Plan[] = [
     { id: "p4", name: "1 Year Plan", duration_days: 365, roi_percent: 90.0, bond_percent: 54.0, platform_percent: 36.0, min_deposit: 1 }
 ];
 
+export const plansById: Readonly<Record<string, Plan>> = plans.reduce<Record<string, Plan>>((accumulator, plan) => {
+  accumulator[plan.id] = plan;
+  return accumulator;
+}, {});
+
+export const getPlanById = (planId: string): Plan | undefined => plansById[planId];
+
 export const notifications: Notification[] = [
   { id: 'n1', title: 'Investment Successful', description: 'Your $1000 investment in the New 1 Month Plan was successful.', date: '2025-09-14', read: false },
   { id: 'n2', title: 'Payout Received', description: 'You received a payout of $1200.00 from your 6 Month Plan.', date: '2025-09-14', read: true },

@@ -1,7 +1,7 @@
 import * as React from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { user as initialUser, transactions as initialTransactions, notifications as initialNotifications, paymentMethods as initialPaymentMethods, Transaction, Notification, PaymentMethod, Investment } from "../lib/data";
-import { calculateDailyRate, calculateCurrentValue, calculateDaysRemaining, calculateProgress, calculateLockExpiry, isInvestmentLocked } from "../lib/investment-utils";
+import { user as initialUser, transactions as initialTransactions, notifications as initialNotifications, paymentMethods as initialPaymentMethods, Transaction, Notification, PaymentMethod, Investment, getPlanById } from "../lib/data";
+import { calculateLockExpiry, isInvestmentLocked } from "../lib/investment-utils";
 
 // Explicit type definitions to avoid complex inference
 export interface User {
@@ -24,12 +24,14 @@ export interface PaymentMethodInput {
   expiry?: string;
 }
 
-export interface InvestmentInput {
+export interface ProcessInvestmentParams {
   planId: string;
-  planName: string;
-  amount: number;
-  currency: string;
+  amountUSD: number;
 }
+
+export type ProcessInvestmentResult =
+  | { success: true; investment: Investment; transaction: Transaction }
+  | { success: false; error: string };
 
 export interface DataState {
   user: User;
@@ -43,7 +45,7 @@ export interface DataState {
   addPaymentMethod: (method: PaymentMethodInput) => void;
   deletePaymentMethod: (methodId: string) => void;
   investments: Investment[];
-  createInvestment: (investment: InvestmentInput) => void;
+  processInvestment: (input: ProcessInvestmentParams) => ProcessInvestmentResult;
 }
 
 // Explicit type for the context value
@@ -74,13 +76,17 @@ export function DataProvider({ children, onHydrated }: { children: React.ReactNo
       const storedTransactions = await getStoredData('app_transactions', initialTransactions);
       const storedNotifications = await getStoredData('app_notifications', initialNotifications);
       const storedPaymentMethods = await getStoredData('app_payment_methods', initialPaymentMethods);
-      const storedInvestments = await getStoredData('app_investments', []);
+      const storedInvestments = await getStoredData<Investment[]>('app_investments', []);
+      const normalizedInvestments = storedInvestments.map((investment) => ({
+        ...investment,
+        isLocked: isInvestmentLocked(investment.lockedUntil),
+      }));
       
       setUser(storedUser);
       setTransactions(storedTransactions);
       setNotifications(storedNotifications);
       setPaymentMethods(storedPaymentMethods);
-      setInvestments(storedInvestments);
+      setInvestments(normalizedInvestments);
       onHydrated?.(); // Signal that data has been loaded
     };
 
@@ -133,25 +139,64 @@ export function DataProvider({ children, onHydrated }: { children: React.ReactNo
     setPaymentMethods(prev => prev.filter(m => m.id !== methodId));
   };
 
-  const createInvestment = (investment: InvestmentInput) => {
+  const processInvestment = ({ planId, amountUSD }: ProcessInvestmentParams): ProcessInvestmentResult => {
+    const plan = getPlanById(planId);
+    if (!plan) {
+      return { success: false, error: 'Selected plan was not found.' };
+    }
+
+    if (Number.isNaN(amountUSD) || amountUSD <= 0) {
+      return { success: false, error: 'Investment amount must be greater than zero.' };
+    }
+
+    if (amountUSD < plan.min_deposit) {
+      return {
+        success: false,
+        error: `The minimum deposit for ${plan.name} is ${plan.min_deposit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD.`,
+      };
+    }
+
+    if (user.balance < amountUSD) {
+      return { success: false, error: "You don't have enough balance to complete this investment." };
+    }
+
     const now = new Date();
     const startDate = now.toISOString();
-    const expectedEndDate = new Date(now.getTime() + (investment.planId === 'p1' ? 7 : 
-                                                      investment.planId === 'p2' ? 30 :
-                                                      investment.planId === 'p3' ? 180 : 365) * 24 * 60 * 60 * 1000).toISOString();
+    const expectedEndDate = new Date(now.getTime() + plan.duration_days * 24 * 60 * 60 * 1000).toISOString();
     const lockedUntil = calculateLockExpiry(startDate);
-    
-    const newInvestment: Investment = {
-      ...investment,
-      id: `inv${investments.length + 1}`,
+    const lockState = isInvestmentLocked(lockedUntil);
+
+    const timestamp = Date.now();
+    const investment: Investment = {
+      id: `inv${timestamp}`,
+      planId: plan.id,
+      planName: plan.name,
+      amount: amountUSD,
+      currency: 'USD',
       startDate,
       expectedEndDate,
       lockedUntil,
-      isLocked: true,
+      isLocked: lockState,
       status: 'Active',
     };
-    
-    setInvestments(prev => [...prev, newInvestment]);
+
+    const transaction: Transaction = {
+      id: `txn${timestamp}`,
+      type: 'Investment',
+      status: 'Completed',
+      amount: -amountUSD,
+      date: startDate.split('T')[0],
+      description: plan.name,
+    };
+
+    setInvestments(prev => [investment, ...prev]);
+    setTransactions(prev => [transaction, ...prev]);
+    setUser(prevUser => ({
+      ...prevUser,
+      balance: prevUser.balance - amountUSD,
+    }));
+
+    return { success: true, investment, transaction };
   };
 
   
@@ -173,7 +218,7 @@ export function DataProvider({ children, onHydrated }: { children: React.ReactNo
     addPaymentMethod,
     deletePaymentMethod,
     investments,
-    createInvestment,
+    processInvestment,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
