@@ -56,10 +56,13 @@ export default function TabsLayout() {
         title: 'Invest',
         tabBarIcon: ({ color, size }) => <Briefcase color={color} size={size} />,
       }} />
+      {/* Plans page removed - single plan now shown in Invest page */}
+      {/* 
       <Tabs.Screen name="plans" options={{
         title: 'Plans',
         tabBarIcon: ({ color, size }) => <BarChart2 color={color} size={size} />,
       }} />
+      */}
       <Tabs.Screen name="wallet" options={{
         title: 'Wallet',
         tabBarIcon: ({ color, size }) => <Wallet color={color} size={size} />,

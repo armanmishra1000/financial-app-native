@@ -17,14 +17,14 @@ import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 import type { ThemeColors } from '../../src/theme/colors';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
-type ViewMode = 'Wallet' | 'Retire';
+
 
 export default function WalletScreen() {
   const { user, transactions, addTransaction, investments } = useData();
   const colors = useThemeColors();
   const [dialogOpen, setDialogOpen] = React.useState<DialogType>(null);
   const [filter, setFilter] = React.useState<Transaction['type'] | 'All'>('All');
-  const [viewMode, setViewMode] = React.useState<ViewMode>('Wallet');
+  
   const [amount, setAmount] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -69,20 +69,13 @@ export default function WalletScreen() {
   const filteredTransactions = React.useMemo(() => {
     let filtered = transactions;
     
-    // If in Retire mode, only show Deposit/Withdrawal
-    if (viewMode === 'Retire') {
-      filtered = transactions.filter(tx => 
-        tx.type === 'Deposit' || tx.type === 'Withdrawal'
-      );
-    } else {
-      // Wallet mode: use filter state
-      if (filter !== 'All') {
-        filtered = transactions.filter(tx => tx.type === filter);
-      }
+    // Use filter state
+    if (filter !== 'All') {
+      filtered = transactions.filter(tx => tx.type === filter);
     }
     
     return filtered;
-  }, [transactions, filter, viewMode]);
+  }, [transactions, filter]);
 
   const handleDialogOpen = (type: DialogType) => {
     setDialogOpen(type);
@@ -155,7 +148,6 @@ export default function WalletScreen() {
   };
 
   const filterOptions: (Transaction['type'] | 'All')[] = ['All', 'Deposit', 'Withdrawal', 'Investment', 'Payout'];
-  const viewModeOptions: ViewMode[] = ['Wallet', 'Retire'];
 
   return (
     <Animated.View
@@ -168,21 +160,13 @@ export default function WalletScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
         <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
           <View style={styles.header}>
-            <Text style={[styles.title, themeStyles.title]}>{viewMode === 'Wallet' ? 'Wallet' : 'Retire'}</Text>
+            <Text style={[styles.title, themeStyles.title]}>Wallet</Text>
             <Text style={[styles.subtitle, themeStyles.subtitle]}>
-              {viewMode === 'Wallet' ? 'Manage your funds and transactions.' : 'View your retirement account details and transaction history.'}
+              Manage your funds and transactions.
             </Text>
           </View>
 
-          {/* Segmented Control */}
-          <SegmentedControl
-            value={viewMode}
-            onChange={(value) => setViewMode(value as ViewMode)}
-            options={viewModeOptions}
-          />
-
-        {/* Account Details - Only in Retire mode */}
-        {viewMode === 'Retire' && <AccountDetails />}
+          
 
         {/* Balance Card */}
         <Card>
@@ -191,8 +175,8 @@ export default function WalletScreen() {
             <Text style={[styles.balanceAmount, themeStyles.balanceAmount]}>{formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}</Text>
           </CardHeader>
           <CardContent>
-            {/* Action buttons - Only in Wallet mode */}
-            {viewMode === 'Wallet' && (
+            {/* Action buttons */}
+            {
               <View style={[styles.actionButtons, isMedium ? styles.actionButtonsUnwrapped : null]}>
                 <Button 
                   variant="outline"
@@ -213,7 +197,7 @@ export default function WalletScreen() {
                   <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Withdraw</Text>
                 </Button>
               </View>
-            )}
+            }
           </CardContent>
         </Card>
 
@@ -222,8 +206,8 @@ export default function WalletScreen() {
             <CardTitle>Transaction History</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Filter buttons - Only in Wallet mode */}
-            {viewMode === 'Wallet' && (
+            {/* Filter buttons */}
+            {
               <View style={styles.filterSection}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
                   <View style={styles.filterButtons}>
@@ -251,7 +235,7 @@ export default function WalletScreen() {
                   </View>
                 </ScrollView>
               </View>
-            )}
+            }
             
             {filteredTransactions.length > 0 ? (
               <View style={styles.transactionsList}>
@@ -268,10 +252,7 @@ export default function WalletScreen() {
                 </View>
                 <Text style={[styles.emptyStateTitle, themeStyles.emptyStateTitle]}>No Transactions Found</Text>
                 <Text style={[styles.emptyStateDescription, themeStyles.emptyStateDescription]}>
-                  {viewMode === 'Retire' 
-                    ? 'There are no deposit or withdrawal transactions in your retirement account.'
-                    : 'There are no transactions that match your selected filter.'
-                  }
+                  There are no transactions that match your selected filter.
                 </Text>
               </View>
             )}
@@ -280,7 +261,7 @@ export default function WalletScreen() {
       </View>
 
       {/* Modal - Only show in Wallet mode */}
-      {dialogOpen && viewMode === 'Wallet' && (
+      {dialogOpen && (
         <Modal
           visible={!!dialogOpen}
           animationType="slide"

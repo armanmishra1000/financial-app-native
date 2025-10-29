@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Eye, EyeOff, ArrowUpRight } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowUpRight, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react-native';
 
 import { useData, useAppState, useThemeColors } from '../../src/context';
 import { useInvestmentCalculations } from '../../src/hooks/useInvestmentCalculations';
@@ -62,6 +62,19 @@ export default function HomeScreen() {
     () => investments.filter(inv => inv.status === 'Active'),
     [investments]
   );
+
+  // Calculate total profit from active investments
+  const totalProfit = React.useMemo(() => {
+    return activeInvestments.reduce((sum, inv) => {
+      const currentValue = getInvestmentCurrentValue(inv.id);
+      return sum + (currentValue - inv.amount);
+    }, 0);
+  }, [activeInvestments, getInvestmentCurrentValue]);
+
+  const profitPercent = React.useMemo(() => {
+    if (user.balance === 0) return 0;
+    return (totalProfit / user.balance) * 100;
+  }, [totalProfit, user.balance]);
 
   React.useEffect(() => {
     Animated.parallel([
@@ -267,9 +280,37 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            <View style={styles.balanceChange}>
-              <ArrowUpRight size={16} color={colors.success} />
-              <Text style={[styles.balanceChangeText, themeStyles.balanceChangeText]}>+5.2% in last 24h</Text>
+            
+            {/* Profit Display */}
+            <View style={styles.profitRow}>
+              <Text style={[styles.profitAmount, themeStyles.profitAmount]}>
+                +{formatCurrency(convertFromUSD(totalProfit, user.displayCurrency), user.displayCurrency)}
+              </Text>
+              <Text style={[styles.profitPercent, themeStyles.profitPercent]}>
+                +{profitPercent.toFixed(2)}%
+              </Text>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.balanceActions}>
+              <Button 
+                size="sm"
+                variant="default"
+                onPress={() => router.push('/wallet')}
+                style={[styles.actionButton, themeStyles.depositButton]}
+              >
+                <ArrowDownToLine size={16} color={colors.primaryForeground} />
+                <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Deposit</Text>
+              </Button>
+              <Button 
+                size="sm"
+                variant="outline"
+                onPress={() => router.push('/wallet')}
+                style={[styles.actionButton, themeStyles.withdrawButton]}
+              >
+                <ArrowUpFromLine size={16} color={colors.primary} />
+                <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Withdraw</Text>
+              </Button>
             </View>
           </CardContent>
         </Card>
@@ -322,14 +363,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <View>
-          <Text style={[styles.sectionTitle, themeStyles.sectionTitle]}>Quick Actions</Text>
-          <View style={[styles.actionsGrid, isMedium ? styles.actionsGridWide : null]}>
-            <ActionCard href="/invest" icon={Briefcase} title="Invest" />
-            <ActionCard href="/plans" icon={BarChart2} title="Plans" />
-            <ActionCard href="/wallet" icon={Wallet} title="Wallet" />
-          </View>
-        </View>
+        
 
         <Card>
           <CardHeader>
@@ -429,9 +463,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacingScale.xs,
   },
-  balanceChangeText: {
+  profitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacingScale.sm,
+  },
+  profitAmount: {
+    fontSize: typographyScale.body,
+    fontWeight: '600',
+    color: '#34d399', // success color
+  },
+  profitPercent: {
     fontSize: typographyScale.bodySmall,
-    marginLeft: spacingScale.xs,
+    fontWeight: '500',
+    color: '#34d399', // success color
+  },
+  balanceActions: {
+    flexDirection: 'row',
+    gap: spacingScale.sm,
+    marginTop: spacingScale.md,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacingScale.xs,
+  },
+  actionButtonText: {
+    fontSize: typographyScale.bodySmall,
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: typographyScale.title,
@@ -551,10 +613,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-  profitPercent: {
-    fontSize: typographyScale.caption,
-    marginTop: spacingScale.xxs,
-  },
+  
   investmentProgress: {
     gap: spacingScale.xs,
   },
@@ -633,8 +692,20 @@ const createHomeThemeStyles = (colors: ThemeColors) => ({
   balanceValueHidden: {
     backgroundColor: colors.surfaceSubtle,
   },
-  balanceChangeText: {
+  profitAmount: {
     color: colors.success,
+  },
+  profitPercent: {
+    color: colors.success,
+  },
+  actionButtonText: {
+    color: colors.text,
+  },
+  depositButton: {
+    backgroundColor: colors.primary,
+  },
+  withdrawButton: {
+    backgroundColor: colors.mutedSurface,
   },
   sectionTitle: {
     color: colors.heading,

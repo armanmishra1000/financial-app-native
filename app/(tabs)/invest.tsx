@@ -9,6 +9,7 @@ import { Select } from '../../src/components/ui/select';
 import { CurrencyToggle } from '../../src/components/ui/currency-toggle';
 import { ConfirmationModal } from '../../src/components/ui/confirmation-modal';
 import { SuccessModal } from '../../src/components/ui/success-modal';
+import { Star } from 'lucide-react-native';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
 import { calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
@@ -23,7 +24,10 @@ export default function InvestScreen() {
   const { user, processInvestment } = useData();
   const colors = useThemeColors();
 
-  const [selectedPlan, setSelectedPlan] = React.useState<Plan | undefined>(plans[1]);
+  // Fixed plan: 6 Month Plan (40% ROI for 180 days ≈ 20% per year)
+const selectedPlan = React.useMemo(() => {
+  return plans.find(p => p.id === 'p3'); // 6 Month Plan - 40% ROI
+}, []);
   const [amount, setAmount] = React.useState<string>("500");
   const [investmentCurrency, setInvestmentCurrency] = React.useState<string>(user.displayCurrency);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -78,13 +82,7 @@ export default function InvestScreen() {
     ]).start();
   }, []);
 
-  const handlePlanChange = React.useCallback((planId: string) => {
-    const plan = plans.find(p => p.id === planId);
-    setSelectedPlan(plan);
-    if (plan && (!amount || parseFloat(amount) < plan.min_deposit)) {
-      setAmount(plan.min_deposit.toString());
-    }
-  }, [amount]);
+  
 
   // Convert amounts for display
   const displayBalance = React.useMemo(() => {
@@ -191,33 +189,9 @@ export default function InvestScreen() {
     setShowConfirmModal(true);
   }, [selectedPlan, amount, investmentCurrency, user.balance, processInvestment, displayBalance, displayMinDeposit, convertFromUSD, formatCurrency, executeInvestment]);
 
-  React.useEffect(() => {
-    const paramValue = Array.isArray(searchParams.plan) ? searchParams.plan[0] : searchParams.plan;
-    if (!paramValue) {
-      return;
-    }
+  
 
-    const matchingPlan = plans.find(plan => plan.id === paramValue);
-    if (matchingPlan) {
-      setSelectedPlan(matchingPlan);
-      setAmount(matchingPlan.min_deposit.toString());
-    }
-  }, [searchParams.plan]);
-
-  const planItems = React.useMemo(() => (
-    plans.map((plan) => {
-      const minimumDepositDisplay = formatCurrency(
-        convertFromUSD(plan.min_deposit, investmentCurrency),
-        investmentCurrency,
-      );
-
-      return {
-        label: plan.name,
-        value: plan.id,
-        description: `${plan.roi_percent}% ROI • ${plan.duration_days} days • Min ${minimumDepositDisplay}`,
-      };
-    })
-  ), [investmentCurrency]);
+  
 
   return (
     <Animated.View
@@ -245,15 +219,15 @@ export default function InvestScreen() {
             </CardHeader>
             <CardContent style={[styles.cardContent, (isMedium || isExpanded) ? styles.cardContentWide : null]}>
               <View style={styles.formSpace}>
-                <Select
-                  label="Investment Plan"
-                  value={selectedPlan?.id}
-                  onValueChange={handlePlanChange}
-                  items={planItems}
-                  placeholder="Select a plan"
-                  modalTitle="Select Investment Plan"
+                <View style={styles.planInfo}>
+                  <Text style={[styles.planLabel, themeStyles.planLabel]}>Investment Plan</Text>
+                  <Text style={[styles.planName, themeStyles.planName]}>{selectedPlan?.name}</Text>
+                  <Text style={[styles.planDescription, themeStyles.planDescription]}>
+                  {selectedPlan?.roi_percent}% ROI • {selectedPlan?.duration_days} days
+                  </Text>
+                  
                   helperText="Compare each plan’s ROI, duration, and minimum deposit."
-                />
+                </View>
 
                 <View style={styles.amountSection}>
                   <View style={styles.amountHeader}>
@@ -318,8 +292,16 @@ export default function InvestScreen() {
                 
                 {/* ROI Breakdown */}
                 {roiBreakdown && (
-                  <View style={[styles.breakdownSection, themeStyles.breakdownSection]}>
-                    <Text style={[styles.breakdownTitle, themeStyles.breakdownTitle]}>ROI Breakdown</Text>
+                  <View style={[
+                      styles.breakdownSection, 
+                      themeStyles.breakdownSection,
+                      styles.breakdownHighlight,
+                      themeStyles.breakdownHighlight
+                    ]}>
+                    <View style={styles.breakdownHeader}>
+                      <Star size={18} color={colors.warning} />
+                      <Text style={[styles.breakdownTitle, themeStyles.breakdownTitle]}>ROI Breakdown</Text>
+                    </View>
                     <View style={styles.breakdownRow}>
                       <Text style={[styles.breakdownLabel, themeStyles.breakdownLabel]}>National Bond</Text>
                       <Text style={[styles.breakdownValue, themeStyles.breakdownValue]}>{roiBreakdown.bond_percent}%</Text>
@@ -474,6 +456,32 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: typographyScale.caption,
   },
+  planInfo: {
+    gap: spacingScale.xs,
+  },
+  planLabel: {
+    fontSize: typographyScale.bodySmall,
+    fontWeight: '500',
+  },
+  planName: {
+    fontSize: typographyScale.subtitle,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+  },
+  planDescription: {
+    fontSize: typographyScale.bodySmall,
+    color: '#6b7280', // textMuted color
+  },
+  breakdownHighlight: {
+    borderWidth: 2,
+    borderRadius: spacingScale.xs,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingScale.xs,
+    marginBottom: spacingScale.xs,
+  },
   currencySection: {
     gap: spacingScale.sm,
   },
@@ -624,6 +632,20 @@ const createInvestThemeStyles = (colors: ThemeColors) => ({
   },
   helperText: {
     color: colors.textMuted,
+  },
+  planLabel: {
+    color: colors.text,
+  },
+  planName: {
+    color: colors.heading,
+  },
+  planDescription: {
+    color: colors.textMuted,
+  },
+  breakdownHighlight: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySurface,
+    boxShadow: '0px 4px 12px rgba(59, 130, 246, 0.2)',
   },
   currencyLabel: {
     color: colors.text,
