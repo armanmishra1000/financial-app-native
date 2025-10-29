@@ -76,10 +76,14 @@ export default function ProfileScreen() {
         },
         {
           text: "Log Out",
-          onPress: () => {
-            logout();
-            Alert.alert("Logged Out", "You have been logged out successfully.");
-            router.replace('/(auth)/login');
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/');
+            } catch (error) {
+              console.error("Logout error:", error);
+              Alert.alert("Error", "Failed to log out. Please try again.");
+            }
           }
         }
       ]

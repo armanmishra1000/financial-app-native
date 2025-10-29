@@ -146,6 +146,9 @@ export function AuthProvider({ children, onHydrated }: { children: React.ReactNo
       setIsAuthenticated(false);
     } catch (error) {
       console.error("Error clearing AsyncStorage:", error);
+      // Ensure state is cleared even if AsyncStorage fails
+      setAuthToken(null);
+      setIsAuthenticated(false);
     }
   };
 
