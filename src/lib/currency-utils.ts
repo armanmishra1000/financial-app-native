@@ -9,7 +9,7 @@ import { supportedCurrencies, CurrencyInfo } from './data';
 export function convertFromUSD(amountUSD: number, targetCurrency: string): number {
   const currencyInfo = supportedCurrencies[targetCurrency];
   if (!currencyInfo) {
-    console.warn(`Currency ${targetCurrency} not supported, returning USD amount`);
+    console.warn(`Currency ${targetCurrency} not supported, returning USD amount. Available currencies: ${Object.keys(supportedCurrencies).join(', ')}`);
     return amountUSD;
   }
   
@@ -25,7 +25,7 @@ export function convertFromUSD(amountUSD: number, targetCurrency: string): numbe
 export function convertToUSD(amount: number, sourceCurrency: string): number {
   const currencyInfo = supportedCurrencies[sourceCurrency];
   if (!currencyInfo) {
-    console.warn(`Currency ${sourceCurrency} not supported, returning original amount`);
+    console.warn(`Currency ${sourceCurrency} not supported, returning original amount. Available currencies: ${Object.keys(supportedCurrencies).join(', ')}`);
     return amount;
   }
   
