@@ -99,28 +99,78 @@ export default function InvestScreen() {
     return getROIBreakdown(selectedPlan.roi_percent);
   }, [selectedPlan]);
 
-  const handleInvest = () => {
+  const executeInvestment = React.useCallback((amountUSD: number) => {
+    console.log('executeInvestment called with amountUSD:', amountUSD);
+    if (!selectedPlan) {
+      console.log('❌ Error: No selected plan');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      console.log('🔄 Calling processInvestment...');
+      const result = processInvestment({ planId: selectedPlan.id, amountUSD });
+      setIsLoading(false);
+      console.log('📋 processInvestment result:', result);
+
+      if (!result.success) {
+        console.log('❌ Investment failed:', result.error);
+        Alert.alert("Investment Failed", result.error);
+        return;
+      }
+
+      console.log('✅ Investment successful!');
+      const displayAmount = investmentCurrency === 'USD' ? amountUSD : convertFromUSD(amountUSD, investmentCurrency);
+      const lockExpiryDisplay = formatLockExpiry(result.investment.lockedUntil);
+
+      Alert.alert(
+        "Investment Successful!",
+        `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${lockExpiryDisplay}`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              console.log('🏠 Navigating to home screen...');
+              router.push('/home');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.log('💥 Unexpected error in executeInvestment:', error);
+      setIsLoading(false);
+      Alert.alert("Unexpected Error", "Something went wrong while processing your investment. Please try again.");
+    }
+  }, [selectedPlan, investmentCurrency, processInvestment, convertFromUSD, formatCurrency, formatLockExpiry, router]);
+
+  const handleInvest = React.useCallback(() => {
+    console.log('handleInvest called');
     const numericAmount = parseFloat(amount);
 
     // Validation checks
     if (!selectedPlan || isNaN(numericAmount) || numericAmount <= 0) {
+      console.log('❌ Validation failed: Invalid plan or amount');
       Alert.alert("Invalid Investment", "Please check the plan and amount.");
       return;
     }
 
     // Convert to USD for validation
     const amountUSD = investmentCurrency === 'USD' ? numericAmount : convertToUSD(numericAmount, investmentCurrency);
+    console.log(`Investment details: Plan=${selectedPlan.name}, Amount=${numericAmount} ${investmentCurrency} ($${amountUSD} USD)`);
 
     if (amountUSD < 1) {
+      console.log('❌ Validation failed: Amount too low');
       Alert.alert("Amount Too Low", `Amount must be at least ${formatCurrency(displayMinDeposit, investmentCurrency)}.`);
       return;
     }
 
     if (user.balance < amountUSD) {
+      console.log('❌ Validation failed: Insufficient balance');
       Alert.alert("Insufficient Balance", `You don't have enough balance. Available: ${formatCurrency(displayBalance, investmentCurrency)}`);
       return;
     }
 
+    console.log('✅ Validation passed, showing confirmation dialog');
     // Confirmation dialog
     Alert.alert(
       "Confirm Investment",
@@ -136,36 +186,7 @@ export default function InvestScreen() {
         }
       ]
     );
-  };
-
-  const executeInvestment = (amountUSD: number) => {
-    if (!selectedPlan) {
-      return;
-    }
-
-    setIsLoading(true);
-    const result = processInvestment({ planId: selectedPlan.id, amountUSD });
-    setIsLoading(false);
-
-    if (!result.success) {
-      Alert.alert("Investment Failed", result.error);
-      return;
-    }
-
-    const displayAmount = investmentCurrency === 'USD' ? amountUSD : convertFromUSD(amountUSD, investmentCurrency);
-    const lockExpiryDisplay = formatLockExpiry(result.investment.lockedUntil);
-
-    Alert.alert(
-      "Investment Successful!",
-      `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${lockExpiryDisplay}`,
-      [
-        {
-          text: "OK",
-          onPress: () => router.push('/home')
-        }
-      ]
-    );
-  };
+  }, [selectedPlan, amount, investmentCurrency, user.balance, processInvestment, displayBalance, displayMinDeposit, convertFromUSD, formatCurrency, executeInvestment]);
 
   React.useEffect(() => {
     const paramValue = Array.isArray(searchParams.plan) ? searchParams.plan[0] : searchParams.plan;

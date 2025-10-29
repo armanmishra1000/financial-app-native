@@ -140,63 +140,82 @@ export function DataProvider({ children, onHydrated }: { children: React.ReactNo
   };
 
   const processInvestment = ({ planId, amountUSD }: ProcessInvestmentParams): ProcessInvestmentResult => {
+    console.log('🔄 processInvestment called with:', { planId, amountUSD });
     const plan = getPlanById(planId);
     if (!plan) {
+      console.log('❌ Plan not found:', planId);
       return { success: false, error: 'Selected plan was not found.' };
     }
 
     if (Number.isNaN(amountUSD) || amountUSD <= 0) {
+      console.log('❌ Invalid amount:', amountUSD);
       return { success: false, error: 'Investment amount must be greater than zero.' };
     }
 
     if (amountUSD < plan.min_deposit) {
+      console.log('❌ Amount too low:', amountUSD, 'min deposit:', plan.min_deposit);
       return {
         success: false,
         error: `The minimum deposit for ${plan.name} is ${plan.min_deposit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD.`,
       };
     }
 
+    console.log('💰 Current user balance:', user.balance, 'Requested amount:', amountUSD);
     if (user.balance < amountUSD) {
+      console.log('❌ Insufficient balance');
       return { success: false, error: "You don't have enough balance to complete this investment." };
     }
 
-    const now = new Date();
-    const startDate = now.toISOString();
-    const expectedEndDate = new Date(now.getTime() + plan.duration_days * 24 * 60 * 60 * 1000).toISOString();
-    const lockedUntil = calculateLockExpiry(startDate);
-    const lockState = isInvestmentLocked(lockedUntil);
+    try {
+      const now = new Date();
+      const startDate = now.toISOString();
+      const expectedEndDate = new Date(now.getTime() + plan.duration_days * 24 * 60 * 60 * 1000).toISOString();
+      const lockedUntil = calculateLockExpiry(startDate);
+      const lockState = isInvestmentLocked(lockedUntil);
 
-    const timestamp = Date.now();
-    const investment: Investment = {
-      id: `inv${timestamp}`,
-      planId: plan.id,
-      planName: plan.name,
-      amount: amountUSD,
-      currency: 'USD',
-      startDate,
-      expectedEndDate,
-      lockedUntil,
-      isLocked: lockState,
-      status: 'Active',
-    };
+      const timestamp = Date.now();
+      const investment: Investment = {
+        id: `inv${timestamp}`,
+        planId: plan.id,
+        planName: plan.name,
+        amount: amountUSD,
+        currency: 'USD',
+        startDate,
+        expectedEndDate,
+        lockedUntil,
+        isLocked: lockState,
+        status: 'Active',
+      };
 
-    const transaction: Transaction = {
-      id: `txn${timestamp}`,
-      type: 'Investment',
-      status: 'Completed',
-      amount: -amountUSD,
-      date: startDate.split('T')[0],
-      description: plan.name,
-    };
+      const transaction: Transaction = {
+        id: `txn${timestamp}`,
+        type: 'Investment',
+        status: 'Completed',
+        amount: -amountUSD,
+        date: startDate.split('T')[0],
+        description: plan.name,
+      };
 
-    setInvestments(prev => [investment, ...prev]);
-    setTransactions(prev => [transaction, ...prev]);
-    setUser(prevUser => ({
-      ...prevUser,
-      balance: prevUser.balance - amountUSD,
-    }));
+      console.log('💸 Creating investment:', investment);
+      console.log('📋 Creating transaction:', transaction);
+      
+      setInvestments(prev => [investment, ...prev]);
+      setTransactions(prev => [transaction, ...prev]);
+      setUser(prevUser => {
+        const newBalance = prevUser.balance - amountUSD;
+        console.log('💵 Updating user balance from', prevUser.balance, 'to', newBalance);
+        return {
+          ...prevUser,
+          balance: newBalance,
+        };
+      });
 
-    return { success: true, investment, transaction };
+      console.log('✅ Investment processed successfully!');
+      return { success: true, investment, transaction };
+    } catch (error) {
+      console.log('💥 Error during investment processing:', error);
+      return { success: false, error: 'An unexpected error occurred while processing your investment.' };
+    }
   };
 
   

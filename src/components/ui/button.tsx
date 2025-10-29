@@ -149,7 +149,10 @@ export function Button({
   };
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View 
+      style={{ transform: [{ scale: scaleAnim }] }}
+      pointerEvents="box-none"
+    >
       <TouchableOpacity 
         style={[
           styles.button,
