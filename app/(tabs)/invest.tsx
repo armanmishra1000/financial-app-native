@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, KeyboardAvoidingView, Keyboard, Platform, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useData, useThemeColors } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
@@ -123,19 +123,23 @@ export default function InvestScreen() {
       const displayAmount = investmentCurrency === 'USD' ? amountUSD : convertFromUSD(amountUSD, investmentCurrency);
       const lockExpiryDisplay = formatLockExpiry(result.investment.lockedUntil);
 
-      Alert.alert(
-        "Investment Successful!",
-        `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${lockExpiryDisplay}`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              console.log('🏠 Navigating to home screen...');
-              router.push('/home');
+      // Add delay for success alert as well
+      setTimeout(() => {
+        console.log('🏆 Showing success alert');
+        Alert.alert(
+          "Investment Successful!",
+          `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${lockExpiryDisplay}`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log('🏠 Navigating to home screen...');
+                router.push('/home');
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      }, 100);
     } catch (error) {
       console.log('💥 Unexpected error in executeInvestment:', error);
       setIsLoading(false);
@@ -171,21 +175,32 @@ export default function InvestScreen() {
     }
 
     console.log('✅ Validation passed, showing confirmation dialog');
-    // Confirmation dialog
-    Alert.alert(
-      "Confirm Investment",
-      `Invest ${formatCurrency(numericAmount, investmentCurrency)} in ${selectedPlan.name}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Confirm",
-          onPress: () => executeInvestment(amountUSD)
-        }
-      ]
-    );
+    
+    // Ensure keyboard is dismissed before showing alert
+    Keyboard.dismiss();
+    
+    // Add delay to ensure UI is ready for alert display
+    setTimeout(() => {
+      console.log('🚨 About to show Alert.alert');
+      Alert.alert(
+        "Confirm Investment",
+        `Invest ${formatCurrency(numericAmount, investmentCurrency)} in ${selectedPlan.name}?`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => console.log('❌ User cancelled investment')
+          },
+          {
+            text: "Confirm",
+            onPress: () => {
+              console.log('✅ User confirmed investment');
+              executeInvestment(amountUSD);
+            }
+          }
+        ]
+      );
+    }, Platform.OS === 'ios' ? 200 : 100);
   }, [selectedPlan, amount, investmentCurrency, user.balance, processInvestment, displayBalance, displayMinDeposit, convertFromUSD, formatCurrency, executeInvestment]);
 
   React.useEffect(() => {
