@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { convertFromUSD } from '../lib/currency-utils';
 import { spacingScale, typographyScale } from '../constants/layout';
+import { useThemeColors } from '../context';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -29,24 +30,32 @@ const statusVariants: { [key in Transaction['status']]: "secondary" | "outline" 
 export function TransactionItem({ transaction, displayCurrency = 'USD' }: TransactionItemProps) {
   const isPositive = transaction.amount > 0;
   const Icon = transactionIcons[transaction.type];
+  const colors = useThemeColors();
   
   // Convert amount to display currency
   const displayAmount = convertFromUSD(transaction.amount, displayCurrency);
   
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { borderBottomColor: colors.divider },
+      ]}
+    >
       {/* Icon with colored background */}
       <View style={[
         styles.iconContainer,
-        isPositive ? styles.iconContainerPositive : styles.iconContainerNeutral
+        {
+          backgroundColor: isPositive ? colors.successSurface : colors.mutedSurface,
+        },
       ]}>
-        <Icon size={20} color={isPositive ? "#059669" : "#6b7280"} />
+        <Icon size={20} color={isPositive ? colors.success : colors.icon} />
       </View>
       
       <View style={styles.content}>
-        <Text style={styles.description}>{transaction.description}</Text>
+        <Text style={[styles.description, { color: colors.text }]}>{transaction.description}</Text>
         <View style={styles.metadata}>
-          <Text style={styles.date}>
+          <Text style={[styles.date, { color: colors.textMuted }]}>
             {format(new Date(transaction.date), "MMM d, yyyy")}
           </Text>
           <Badge variant={statusVariants[transaction.status]}>
@@ -55,7 +64,14 @@ export function TransactionItem({ transaction, displayCurrency = 'USD' }: Transa
         </View>
       </View>
       
-      <Text style={[styles.amount, isPositive && styles.amountPositive]}>
+      <Text
+        style={[
+          styles.amount,
+          {
+            color: isPositive ? colors.success : colors.danger,
+          },
+        ]}
+      >
         {isPositive ? '+' : ''}{formatCurrency(Math.abs(displayAmount), displayCurrency)}
       </Text>
     </View>
@@ -68,7 +84,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacingScale.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   iconContainer: {
     width: 40,
@@ -78,18 +93,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacingScale.md,
   },
-  iconContainerPositive: {
-    backgroundColor: '#d1fae5',
-  },
-  iconContainerNeutral: {
-    backgroundColor: '#f3f4f6',
-  },
   content: {
     flex: 1,
   },
   description: {
     fontWeight: '600',
-    color: '#111827',
     fontSize: typographyScale.body,
   },
   metadata: {
@@ -100,17 +108,10 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: typographyScale.bodySmall,
-    color: '#6b7280',
   },
   amount: {
     fontWeight: '600',
     fontSize: typographyScale.body,
     textAlign: 'right',
-  },
-  amountPositive: {
-    color: '#059669',
-  },
-  amountNegative: {
-    color: '#dc2626',
   },
 });

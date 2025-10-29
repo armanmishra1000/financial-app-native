@@ -1,5 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, Platform, Animated } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, Animated, StyleProp } from 'react-native';
+
+import { useThemeColors } from '../../context';
 
 type ButtonVariant = 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
@@ -8,8 +10,8 @@ interface ButtonProps {
   children: React.ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   onPress?: () => void;
   disabled?: boolean;
 }
@@ -28,6 +30,7 @@ export function Button({
   const hasOnlyTextChildren = childArray.every(
     (child) => typeof child === 'string' || typeof child === 'number'
   );
+  const colors = useThemeColors();
   
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -51,11 +54,11 @@ export function Button({
         return {
           backgroundColor: 'transparent',
           borderWidth: 1,
-          borderColor: '#d1d5db',
+          borderColor: colors.border,
         };
       case 'secondary':
         return {
-          backgroundColor: '#f3f4f6',
+          backgroundColor: colors.mutedSurface,
         };
       case 'ghost':
         return {
@@ -69,7 +72,7 @@ export function Button({
         };
       default:
         return {
-          backgroundColor: '#3b82f6',
+          backgroundColor: colors.primary,
         };
     }
   };
@@ -107,23 +110,23 @@ export function Button({
     switch (variant) {
       case 'outline':
         return {
-          color: '#374151',
+          color: colors.text,
         };
       case 'secondary':
         return {
-          color: '#111827',
+          color: colors.text,
         };
       case 'ghost':
         return {
-          color: '#374151',
+          color: colors.text,
         };
       case 'link':
         return {
-          color: '#3b82f6',
+          color: colors.link,
         };
       default:
         return {
-          color: '#ffffff',
+          color: colors.primaryForeground,
         };
     }
   };

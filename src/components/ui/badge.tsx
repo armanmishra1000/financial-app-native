@@ -1,27 +1,68 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
+import { useThemeColors } from '../../context';
+
 interface BadgeProps {
   children: React.ReactNode;
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
 }
 
 export function Badge({ children, variant = 'default' }: BadgeProps) {
+  const colors = useThemeColors();
+
+  const { backgroundColor, textColor, borderColor, borderWidth } = React.useMemo(() => {
+    switch (variant) {
+      case 'secondary':
+        return {
+          backgroundColor: colors.mutedSurface,
+          textColor: colors.text,
+          borderColor: 'transparent',
+          borderWidth: 0,
+        };
+      case 'destructive':
+        return {
+          backgroundColor: colors.dangerSurface,
+          textColor: colors.dangerForeground,
+          borderColor: 'transparent',
+          borderWidth: 0,
+        };
+      case 'outline':
+        return {
+          backgroundColor: 'transparent',
+          textColor: colors.text,
+          borderColor: colors.border,
+          borderWidth: 1,
+        };
+      default:
+        return {
+          backgroundColor: colors.primary,
+          textColor: colors.primaryForeground,
+          borderColor: 'transparent',
+          borderWidth: 0,
+        };
+    }
+  }, [colors, variant]);
+
   return (
-    <View style={[
-      styles.badge,
-      variant === 'default' && styles.badgeDefault,
-      variant === 'secondary' && styles.badgeSecondary,
-      variant === 'destructive' && styles.badgeDestructive,
-      variant === 'outline' && styles.badgeOutline
-    ]}>
-      <Text style={[
-        styles.badgeText,
-        variant === 'default' && styles.badgeTextDefault,
-        variant === 'secondary' && styles.badgeTextSecondary,
-        variant === 'destructive' && styles.badgeTextDestructive,
-        variant === 'outline' && styles.badgeTextOutline
-      ]}>
+    <View
+      style={[
+        styles.badge,
+        {
+          backgroundColor,
+          borderColor,
+          borderWidth,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.badgeText,
+          {
+            color: textColor,
+          },
+        ]}
+      >
         {children}
       </Text>
     </View>
@@ -34,34 +75,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  badgeDefault: {
-    backgroundColor: '#3b82f6',
-  },
-  badgeSecondary: {
-    backgroundColor: '#f3f4f6',
-  },
-  badgeDestructive: {
-    backgroundColor: '#ef4444',
-  },
-  badgeOutline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
   badgeText: {
     fontSize: 12,
     fontWeight: '500',
-  },
-  badgeTextDefault: {
-    color: '#ffffff',
-  },
-  badgeTextSecondary: {
-    color: '#1f2937',
-  },
-  badgeTextDestructive: {
-    color: '#ffffff',
-  },
-  badgeTextOutline: {
-    color: '#1f2937',
   },
 });

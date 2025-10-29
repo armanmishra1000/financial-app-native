@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, KeyboardAvoidingView, Platform, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useData } from '../../src/context';
+import { useData, useThemeColors } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
@@ -13,10 +13,12 @@ import { calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockEx
 import { convertFromUSD, convertToUSD, getExchangeRateString } from '../../src/lib/currency-utils';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
+import type { ThemeColors } from '../../src/theme/colors';
 
 export default function InvestScreen() {
   const router = useRouter();
   const { user, addTransaction, createInvestment } = useData();
+  const colors = useThemeColors();
 
   const [selectedPlan, setSelectedPlan] = React.useState<Plan | undefined>(plans[1]);
   const [amount, setAmount] = React.useState<string>("500");
@@ -32,6 +34,7 @@ export default function InvestScreen() {
     isExpanded,
     safeAreaInsets,
   } = useResponsiveLayout();
+  const themeStyles = React.useMemo(() => createInvestThemeStyles(colors), [colors]);
 
   const contentContainerStyle = React.useMemo<StyleProp<ViewStyle>>(
     () => ({
@@ -183,7 +186,13 @@ export default function InvestScreen() {
   }));
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        themeStyles.container,
+        { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] },
+      ]}
+    >
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -191,8 +200,8 @@ export default function InvestScreen() {
         <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
         <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Make an Investment</Text>
-            <Text style={styles.subtitle}>Choose a plan and enter an amount to invest.</Text>
+            <Text style={[styles.title, themeStyles.title]}>Make an Investment</Text>
+            <Text style={[styles.subtitle, themeStyles.subtitle]}>Choose a plan and enter an amount to invest.</Text>
           </View>
 
           <Card>
@@ -212,8 +221,8 @@ export default function InvestScreen() {
 
                 <View style={styles.amountSection}>
                   <View style={styles.amountHeader}>
-                    <Text style={styles.amountLabel}>Amount to Invest ({investmentCurrency})</Text>
-                    <Text style={styles.balanceText}>
+                    <Text style={[styles.amountLabel, themeStyles.amountLabel]}>Amount to Invest ({investmentCurrency})</Text>
+                    <Text style={[styles.balanceText, themeStyles.balanceText]}>
                       Balance: {formatCurrency(displayBalance, investmentCurrency)}
                     </Text>
                   </View>
@@ -224,7 +233,7 @@ export default function InvestScreen() {
                     keyboardType="numeric"
                   />
                   {selectedPlan && (
-                    <Text style={styles.helperText}>
+                    <Text style={[styles.helperText, themeStyles.helperText]}>
                       Minimum deposit: {formatCurrency(displayMinDeposit, investmentCurrency)}
                     </Text>
                   )}
@@ -232,55 +241,61 @@ export default function InvestScreen() {
 
                 {/* Currency Toggle */}
                 <View style={styles.currencySection}>
-                  <Text style={styles.currencyLabel}>Display Currency</Text>
+                  <Text style={[styles.currencyLabel, themeStyles.currencyLabel]}>Display Currency</Text>
                   <CurrencyToggle
                     value={investmentCurrency}
                     onValueChange={setInvestmentCurrency}
                     options={['USD', user.displayCurrency].filter((code, index, arr) => arr.indexOf(code) === index)}
                   />
                   {investmentCurrency !== 'USD' && (
-                    <Text style={styles.exchangeRateText}>
+                    <Text style={[styles.exchangeRateText, themeStyles.exchangeRateText]}>
                       {getExchangeRateString('USD', investmentCurrency)}
                     </Text>
                   )}
                 </View>
               </View>
 
-              <View style={[styles.summarySection, (isMedium || isExpanded) ? styles.summarySectionWide : null]}>
-                <Text style={styles.summaryTitle}>Summary</Text>
+              <View
+                style={[
+                  styles.summarySection,
+                  themeStyles.summarySection,
+                  (isMedium || isExpanded) ? styles.summarySectionWide : null,
+                ]}
+              >
+                <Text style={[styles.summaryTitle, themeStyles.summaryTitle]}>Summary</Text>
                 
                 {/* Investment Details */}
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Your Investment</Text>
-                  <Text style={styles.summaryValue}>
+                  <Text style={[styles.summaryLabel, themeStyles.summaryLabel]}>Your Investment</Text>
+                  <Text style={[styles.summaryValue, themeStyles.summaryValue]}>
                     {formatCurrency(parseFloat(amount) || 0, investmentCurrency)}
                   </Text>
                 </View>
                 
                 {/* 30-Day Lock Warning */}
-                <View style={styles.lockWarning}>
-                  <Text style={styles.lockWarningTitle}>⚠️ 30-Day Lock Period</Text>
-                  <Text style={styles.lockWarningText}>
+                <View style={[styles.lockWarning, themeStyles.lockWarning]}>
+                  <Text style={[styles.lockWarningTitle, themeStyles.lockWarningTitle]}>⚠️ 30-Day Lock Period</Text>
+                  <Text style={[styles.lockWarningText, themeStyles.lockWarningText]}>
                     Withdrawals will be blocked for 30 days after investment. This protects your investment and ensures compound interest growth.
                   </Text>
                 </View>
                 
                 {/* ROI Breakdown */}
                 {roiBreakdown && (
-                  <View style={styles.breakdownSection}>
-                    <Text style={styles.breakdownTitle}>ROI Breakdown</Text>
+                  <View style={[styles.breakdownSection, themeStyles.breakdownSection]}>
+                    <Text style={[styles.breakdownTitle, themeStyles.breakdownTitle]}>ROI Breakdown</Text>
                     <View style={styles.breakdownRow}>
-                      <Text style={styles.breakdownLabel}>National Bond</Text>
-                      <Text style={styles.breakdownValue}>{roiBreakdown.bond_percent}%</Text>
+                      <Text style={[styles.breakdownLabel, themeStyles.breakdownLabel]}>National Bond</Text>
+                      <Text style={[styles.breakdownValue, themeStyles.breakdownValue]}>{roiBreakdown.bond_percent}%</Text>
                     </View>
                     <View style={styles.breakdownRow}>
-                      <Text style={styles.breakdownLabel}>Platform Bonus</Text>
-                      <Text style={styles.breakdownValue}>+{roiBreakdown.platform_percent}%</Text>
+                      <Text style={[styles.breakdownLabel, themeStyles.breakdownLabel]}>Platform Bonus</Text>
+                      <Text style={[styles.breakdownValue, themeStyles.breakdownValue]}>+{roiBreakdown.platform_percent}%</Text>
                     </View>
-                    <View style={styles.breakdownDivider} />
+                    <View style={[styles.breakdownDivider, themeStyles.breakdownDivider]} />
                     <View style={styles.breakdownRow}>
-                      <Text style={styles.breakdownTotalLabel}>Total APY</Text>
-                      <Text style={styles.breakdownTotalValue}>{roiBreakdown.total_percent}%</Text>
+                      <Text style={[styles.breakdownTotalLabel, themeStyles.breakdownTotalLabel]}>Total APY</Text>
+                      <Text style={[styles.breakdownTotalValue, themeStyles.breakdownTotalValue]}>{roiBreakdown.total_percent}%</Text>
                     </View>
                   </View>
                 )}
@@ -288,27 +303,27 @@ export default function InvestScreen() {
                 {/* Compound Interest Details */}
                 {investmentCalculation && (
                   <View style={styles.compoundSection}>
-                    <Text style={styles.compoundTitle}>Expected Returns</Text>
+                    <Text style={[styles.compoundTitle, themeStyles.compoundTitle]}>Expected Returns</Text>
                     <View style={styles.compoundRow}>
-                      <Text style={styles.compoundLabel}>Daily Rate</Text>
-                      <Text style={styles.compoundValue}>{formatDailyRate(investmentCalculation.dailyRate)}</Text>
+                      <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Daily Rate</Text>
+                      <Text style={[styles.compoundValue, themeStyles.compoundValue]}>{formatDailyRate(investmentCalculation.dailyRate)}</Text>
                     </View>
                     <View style={styles.compoundRow}>
-                      <Text style={styles.compoundLabel}>Daily Earnings</Text>
-                      <Text style={styles.compoundValue}>
+                      <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Daily Earnings</Text>
+                      <Text style={[styles.compoundValue, themeStyles.compoundValue]}>
                         +{formatCurrency(convertFromUSD(investmentCalculation.dailyEarnings, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
                     <View style={styles.compoundRow}>
-                      <Text style={styles.compoundLabel}>Total Growth ({selectedPlan?.duration_days} days)</Text>
-                      <Text style={styles.profitValue}>
+                      <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Total Growth ({selectedPlan?.duration_days} days)</Text>
+                      <Text style={[styles.profitValue, themeStyles.profitValue]}>
                         +{formatCurrency(convertFromUSD(investmentCalculation.profit, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
-                    <View style={styles.summaryDivider} />
+                    <View style={[styles.summaryDivider, themeStyles.summaryDivider]} />
                     <View style={styles.summaryRow}>
-                      <Text style={styles.totalLabel}>Final Value</Text>
-                      <Text style={styles.totalValue}>
+                      <Text style={[styles.totalLabel, themeStyles.totalLabel]}>Final Value</Text>
+                      <Text style={[styles.totalValue, themeStyles.totalValue]}>
                         {formatCurrency(convertFromUSD(investmentCalculation.total, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
@@ -335,7 +350,6 @@ export default function InvestScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -359,12 +373,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: typographyScale.headline,
     fontWeight: 'bold',
-    color: '#111827',
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: typographyScale.subtitle,
-    color: '#6b7280',
   },
   cardContent: {
     gap: spacingScale.lg,
@@ -391,15 +403,12 @@ const styles = StyleSheet.create({
   amountLabel: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '500',
-    color: '#374151',
   },
   balanceText: {
     fontSize: typographyScale.caption,
-    color: '#6b7280',
   },
   helperText: {
     fontSize: typographyScale.caption,
-    color: '#6b7280',
   },
   currencySection: {
     gap: spacingScale.sm,
@@ -407,16 +416,13 @@ const styles = StyleSheet.create({
   currencyLabel: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '500',
-    color: '#374151',
   },
   exchangeRateText: {
     fontSize: typographyScale.caption,
-    color: '#6b7280',
     textAlign: 'center',
     marginTop: spacingScale.xs,
   },
   summarySection: {
-    backgroundColor: 'rgba(243, 244, 246, 0.5)',
     padding: spacingScale.md,
     borderRadius: spacingScale.xs,
     gap: spacingScale.sm,
@@ -429,7 +435,6 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: typographyScale.subtitle,
     fontWeight: '600',
-    color: '#111827',
     letterSpacing: -0.3,
   },
   summaryRow: {
@@ -439,33 +444,27 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: typographyScale.bodySmall,
-    color: '#6b7280',
   },
   summaryValue: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '500',
-    color: '#111827',
   },
   profitValue: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '500',
-    color: '#059669',
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: '#e5e7eb',
     marginVertical: spacingScale.xs,
   },
   totalLabel: {
     fontSize: typographyScale.title,
     fontWeight: 'bold',
-    color: '#111827',
     letterSpacing: -0.5,
   },
   totalValue: {
     fontSize: typographyScale.title,
     fontWeight: 'bold',
-    color: '#111827',
     letterSpacing: -0.5,
   },
   confirmButton: {
@@ -474,14 +473,12 @@ const styles = StyleSheet.create({
   breakdownSection: {
     marginTop: spacingScale.md,
     padding: spacingScale.sm,
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
     borderRadius: spacingScale.xs,
     gap: spacingScale.xs,
   },
   breakdownTitle: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '600',
-    color: '#3b82f6',
     marginBottom: spacingScale.xs,
   },
   breakdownRow: {
@@ -491,27 +488,22 @@ const styles = StyleSheet.create({
   },
   breakdownLabel: {
     fontSize: typographyScale.caption,
-    color: '#6b7280',
   },
   breakdownValue: {
     fontSize: typographyScale.caption,
     fontWeight: '500',
-    color: '#111827',
   },
   breakdownDivider: {
     height: 1,
-    backgroundColor: '#e5e7eb',
     marginVertical: spacingScale.xs,
   },
   breakdownTotalLabel: {
     fontSize: typographyScale.caption,
     fontWeight: '600',
-    color: '#3b82f6',
   },
   breakdownTotalValue: {
     fontSize: typographyScale.caption,
     fontWeight: '600',
-    color: '#3b82f6',
   },
   compoundSection: {
     marginTop: spacingScale.md,
@@ -520,7 +512,6 @@ const styles = StyleSheet.create({
   compoundTitle: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '600',
-    color: '#059669',
     marginBottom: spacingScale.xs,
   },
   compoundRow: {
@@ -530,28 +521,113 @@ const styles = StyleSheet.create({
   },
   compoundLabel: {
     fontSize: typographyScale.caption,
-    color: '#6b7280',
   },
   compoundValue: {
     fontSize: typographyScale.caption,
     fontWeight: '500',
-    color: '#059669',
   },
   lockWarning: {
     marginTop: spacingScale.md,
     padding: spacingScale.sm,
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
     borderRadius: spacingScale.xs,
     gap: spacingScale.xs,
   },
   lockWarningTitle: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '600',
-    color: '#d97706',
   },
   lockWarningText: {
     fontSize: typographyScale.caption,
-    color: '#92400e',
     lineHeight: 18,
+  },
+});
+
+const createInvestThemeStyles = (colors: ThemeColors) => ({
+  container: {
+    backgroundColor: colors.background,
+  },
+  title: {
+    color: colors.heading,
+  },
+  subtitle: {
+    color: colors.textMuted,
+  },
+  amountLabel: {
+    color: colors.text,
+  },
+  balanceText: {
+    color: colors.textMuted,
+  },
+  helperText: {
+    color: colors.textMuted,
+  },
+  currencyLabel: {
+    color: colors.text,
+  },
+  exchangeRateText: {
+    color: colors.textMuted,
+  },
+  summarySection: {
+    backgroundColor: colors.surfaceSubtle,
+  },
+  summaryTitle: {
+    color: colors.heading,
+  },
+  summaryLabel: {
+    color: colors.textMuted,
+  },
+  summaryValue: {
+    color: colors.text,
+  },
+  profitValue: {
+    color: colors.success,
+  },
+  summaryDivider: {
+    backgroundColor: colors.divider,
+  },
+  totalLabel: {
+    color: colors.heading,
+  },
+  totalValue: {
+    color: colors.heading,
+  },
+  breakdownSection: {
+    backgroundColor: colors.primarySurface,
+  },
+  breakdownTitle: {
+    color: colors.primary,
+  },
+  breakdownLabel: {
+    color: colors.textMuted,
+  },
+  breakdownValue: {
+    color: colors.text,
+  },
+  breakdownDivider: {
+    backgroundColor: colors.divider,
+  },
+  breakdownTotalLabel: {
+    color: colors.primary,
+  },
+  breakdownTotalValue: {
+    color: colors.primary,
+  },
+  compoundTitle: {
+    color: colors.success,
+  },
+  compoundLabel: {
+    color: colors.textMuted,
+  },
+  compoundValue: {
+    color: colors.success,
+  },
+  lockWarning: {
+    backgroundColor: colors.warningSurface,
+  },
+  lockWarningTitle: {
+    color: colors.warning,
+  },
+  lockWarningText: {
+    color: colors.warning,
   },
 });

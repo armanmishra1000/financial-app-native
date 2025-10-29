@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Bell, CreditCard, Shield, FileText, HelpCircle, LogOut, SunMoon, Globe } from 'lucide-react-native';
-import { useData, useAuth } from '../../src/context';
+import { useData, useAuth, useTheme, useThemeColors } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
 import { Avatar } from '../../src/components/ui/avatar';
@@ -10,6 +10,7 @@ import { Switch } from '../../src/components/ui/switch';
 import { Select } from '../../src/components/ui/select';
 import { getSupportedCurrencyCodes, getCurrencyDisplayName } from '../../src/lib/currency-utils';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
+import type { ThemeColors } from '../../src/theme/colors';
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 type MenuIcon = React.ComponentType<{ size?: number; color?: string }>;
@@ -18,7 +19,8 @@ export default function ProfileScreen() {
   const { user, setDisplayCurrency } = useData();
   const { logout } = useAuth();
   const router = useRouter();
-  const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const { isDarkMode, setTheme } = useTheme();
+  const colors = useThemeColors();
   const [isComingSoonOpen, setIsComingSoonOpen] = React.useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
@@ -40,6 +42,7 @@ export default function ProfileScreen() {
     }),
     [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
   );
+  const themeStyles = React.useMemo(() => createProfileThemeStyles(colors), [colors]);
 
   React.useEffect(() => {
     Animated.parallel([
@@ -84,9 +87,9 @@ export default function ProfileScreen() {
   };
 
   const handleThemeChange = (checked: boolean) => {
-    setIsDarkMode(checked);
-    const newTheme = checked ? 'Dark' : 'Light';
-    Alert.alert("Theme Changed", `Theme changed to ${newTheme} Mode`);
+    const newTheme = checked ? 'dark' : 'light';
+    void setTheme(newTheme);
+    Alert.alert("Theme Changed", `Theme changed to ${newTheme === 'dark' ? 'Dark' : 'Light'} Mode`);
   };
 
   const handleComingSoon = () => {
@@ -95,16 +98,22 @@ export default function ProfileScreen() {
 
   const ProfileMenuItem = ({ icon: Icon, label, onPress }: { icon: MenuIcon; label: string; onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={styles.menuItem}>
-      <View style={styles.menuItemIcon}>
-        <Icon size={20} color="#6b7280" />
+      <View style={[styles.menuItemIcon, themeStyles.menuItemIcon]}>
+        <Icon size={20} color={colors.iconMuted} />
       </View>
-      <Text style={styles.menuItemLabel}>{label}</Text>
+      <Text style={[styles.menuItemLabel, themeStyles.menuItemLabel]}>{label}</Text>
     </TouchableOpacity>
   );
 
   return (
     <>
-      <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}>
+      <Animated.View
+        style={[
+          styles.container,
+          themeStyles.container,
+          { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] },
+        ]}
+      >
         <ScrollView style={styles.scrollView} contentContainerStyle={[styles.content, contentContainerStyle]}>
           <View style={[styles.space, isExpanded ? styles.spaceExpanded : null]}>
             <Card>
@@ -114,8 +123,8 @@ export default function ProfileScreen() {
                   fallback={userInitials}
                   size={96}
                 />
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userDescription}>Manage your account details.</Text>
+                <Text style={[styles.userName, themeStyles.userName]}>{user.name}</Text>
+                <Text style={[styles.userDescription, themeStyles.userDescription]}>Manage your account details.</Text>
               </CardContent>
             </Card>
 
@@ -136,30 +145,30 @@ export default function ProfileScreen() {
                   label="Payment Methods"
                   onPress={() => router.push('/profile/payment-methods')}
                 />
-                <View style={styles.menuItemSeparator} />
+                <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <ProfileMenuItem
                   icon={Bell}
                   label="Notifications"
                   onPress={() => router.push('/profile/notifications')}
                 />
-                <View style={styles.menuItemSeparator} />
+                <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <View style={styles.menuItem}>
-                  <View style={styles.menuItemIcon}>
-                    <SunMoon size={20} color="#6b7280" />
+                  <View style={[styles.menuItemIcon, themeStyles.menuItemIcon]}>
+                    <SunMoon size={20} color={colors.iconMuted} />
                   </View>
-                  <Text style={styles.menuItemLabel}>Dark Mode</Text>
+                  <Text style={[styles.menuItemLabel, themeStyles.menuItemLabel]}>Dark Mode</Text>
                   <Switch
                     value={isDarkMode}
                     onValueChange={handleThemeChange}
                   />
                 </View>
-                <View style={styles.menuItemSeparator} />
+                <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <View style={styles.menuItem}>
-                  <View style={styles.menuItemIcon}>
-                    <Globe size={20} color="#6b7280" />
+                  <View style={[styles.menuItemIcon, themeStyles.menuItemIcon]}>
+                    <Globe size={20} color={colors.iconMuted} />
                   </View>
                   <View style={styles.menuItemContent}>
-                    <Text style={styles.menuItemLabel}>Display Currency</Text>
+                    <Text style={[styles.menuItemLabel, themeStyles.menuItemLabel]}>Display Currency</Text>
                     <Select
                       value={user.displayCurrency}
                       onValueChange={setDisplayCurrency}
@@ -185,13 +194,13 @@ export default function ProfileScreen() {
                   label="Help Center"
                   onPress={handleComingSoon}
                 />
-                <View style={styles.menuItemSeparator} />
+                <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <ProfileMenuItem
                   icon={Shield}
                   label="Privacy Policy"
                   onPress={handleComingSoon}
                 />
-                <View style={styles.menuItemSeparator} />
+                <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <ProfileMenuItem
                   icon={FileText}
                   label="Terms of Service"
@@ -202,12 +211,12 @@ export default function ProfileScreen() {
 
             <Button 
               variant="outline"
-              style={styles.logoutButton}
-              textStyle={styles.logoutButtonText}
+              style={[styles.logoutButton, themeStyles.logoutButton]}
+              textStyle={[styles.logoutButtonText, themeStyles.logoutButtonText]}
               onPress={handleLogout}
             >
-              <LogOut size={16} color="#374151" />
-              <Text style={styles.logoutButtonText}>Log Out</Text>
+              <LogOut size={16} color={colors.text} />
+              <Text style={[styles.logoutButtonText, themeStyles.logoutButtonText]}>Log Out</Text>
             </Button>
           </View>
 
@@ -221,9 +230,9 @@ export default function ProfileScreen() {
         onRequestClose={() => setIsComingSoonOpen(false)}
       >
         <View style={styles.comingSoonOverlay}>
-          <View style={styles.comingSoonModal}>
-            <Text style={styles.comingSoonTitle}>Coming Soon!</Text>
-            <Text style={styles.comingSoonDescription}>
+          <View style={[styles.comingSoonModal, themeStyles.comingSoonModal]}>
+            <Text style={[styles.comingSoonTitle, themeStyles.comingSoonTitle]}>Coming Soon!</Text>
+            <Text style={[styles.comingSoonDescription, themeStyles.comingSoonDescription]}>
               This feature will be available in a future update.
             </Text>
             <Button onPress={() => setIsComingSoonOpen(false)}>
@@ -239,7 +248,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   content: {
     width: '100%',
@@ -259,12 +267,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: typographyScale.title,
     fontWeight: 'bold',
-    color: '#111827',
     letterSpacing: -0.3,
   },
   userDescription: {
     fontSize: typographyScale.body,
-    color: '#6b7280',
     textAlign: 'center',
   },
   menuItem: {
@@ -276,7 +282,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: spacingScale.xs,
-    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacingScale.md,
@@ -285,7 +290,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typographyScale.body,
     fontWeight: '500',
-    color: '#111827',
   },
   menuItemContent: {
     flex: 1,
@@ -297,11 +301,9 @@ const styles = StyleSheet.create({
   },
   menuItemSeparator: {
     height: 1,
-    backgroundColor: '#e5e7eb',
     marginVertical: spacingScale.xs,
   },
   logoutButton: {
-    backgroundColor: '#f3f4f6',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -309,7 +311,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacingScale.xs,
   },
   logoutButtonText: {
-    color: '#374151',
     fontWeight: '600',
     fontSize: typographyScale.bodySmall,
   },
@@ -321,7 +322,6 @@ const styles = StyleSheet.create({
     padding: spacingScale.lg,
   },
   comingSoonModal: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: spacingScale.lg,
     alignItems: 'center',
@@ -332,11 +332,9 @@ const styles = StyleSheet.create({
   comingSoonTitle: {
     fontSize: typographyScale.title,
     fontWeight: 'bold',
-    color: '#111827',
   },
   comingSoonDescription: {
     fontSize: typographyScale.body,
-    color: '#6b7280',
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -345,5 +343,41 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+});
+
+const createProfileThemeStyles = (colors: ThemeColors) => ({
+  container: {
+    backgroundColor: colors.background,
+  },
+  userName: {
+    color: colors.heading,
+  },
+  userDescription: {
+    color: colors.textMuted,
+  },
+  menuItemIcon: {
+    backgroundColor: colors.mutedSurface,
+  },
+  menuItemLabel: {
+    color: colors.text,
+  },
+  menuItemSeparator: {
+    backgroundColor: colors.divider,
+  },
+  logoutButton: {
+    backgroundColor: colors.mutedSurface,
+  },
+  logoutButtonText: {
+    color: colors.text,
+  },
+  comingSoonModal: {
+    backgroundColor: colors.surface,
+  },
+  comingSoonTitle: {
+    color: colors.heading,
+  },
+  comingSoonDescription: {
+    color: colors.textMuted,
   },
 });

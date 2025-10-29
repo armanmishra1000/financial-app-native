@@ -6,11 +6,13 @@ import { Home, Briefcase, BarChart2, Wallet, User } from 'lucide-react-native';
 
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
+import { useThemeColors } from '../../src/context';
 
 const NAV_RAIL_WIDTH = 104;
 
 export default function TabsLayout() {
   const { safeAreaInsets, shouldShowNavigationRail } = useResponsiveLayout();
+  const colors = useThemeColors();
 
   const tabBarStyle = useMemo(() => {
     if (shouldShowNavigationRail) {
@@ -18,22 +20,28 @@ export default function TabsLayout() {
     }
 
     return {
-      backgroundColor: '#ffffff',
-      borderTopColor: '#e5e7eb',
+      backgroundColor: colors.surface,
+      borderTopColor: colors.divider,
       borderTopWidth: 1,
       height: 60 + safeAreaInsets.bottom,
       paddingBottom: Math.max(spacingScale.xs, safeAreaInsets.bottom),
       paddingTop: spacingScale.xs,
     };
-  }, [safeAreaInsets.bottom, shouldShowNavigationRail]);
+  }, [colors.divider, colors.surface, safeAreaInsets.bottom, shouldShowNavigationRail]);
 
   return (
-    <View style={[layoutStyles.container, shouldShowNavigationRail ? layoutStyles.containerWithRail : null]}>
+    <View
+      style={[
+        layoutStyles.container,
+        shouldShowNavigationRail ? layoutStyles.containerWithRail : null,
+        { backgroundColor: colors.background },
+      ]}
+    >
       <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#6366f1',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.iconMuted,
         tabBarStyle,
       }}
       tabBar={(props) => (
@@ -67,6 +75,7 @@ export default function TabsLayout() {
 
 function NavigationRail({ state, descriptors, navigation }: BottomTabBarProps) {
   const { safeAreaInsets } = useResponsiveLayout();
+  const colors = useThemeColors();
 
   return (
     <View
@@ -75,6 +84,8 @@ function NavigationRail({ state, descriptors, navigation }: BottomTabBarProps) {
         {
           paddingTop: safeAreaInsets.top + spacingScale.sm,
           paddingBottom: Math.max(spacingScale.sm, safeAreaInsets.bottom),
+          backgroundColor: colors.surface,
+          borderRightColor: colors.divider,
         },
       ]}
     >
@@ -108,7 +119,7 @@ function NavigationRail({ state, descriptors, navigation }: BottomTabBarProps) {
           });
         };
 
-        const color = isFocused ? '#1d4ed8' : '#6b7280';
+        const color = isFocused ? colors.primary : colors.iconMuted;
         const icon = options.tabBarIcon?.({ focused: isFocused, color, size: 24 }) ?? null;
 
         return (
@@ -120,10 +131,20 @@ function NavigationRail({ state, descriptors, navigation }: BottomTabBarProps) {
             onPress={onPress}
             onLongPress={onLongPress}
             activeOpacity={0.8}
-            style={[railStyles.item, isFocused && railStyles.itemFocused]}
+            style={[
+              railStyles.item,
+              isFocused && { backgroundColor: colors.primarySurface },
+            ]}
           >
             <View style={railStyles.iconWrapper}>{icon}</View>
-            <Text style={[railStyles.label, isFocused && railStyles.labelFocused]} numberOfLines={1}>
+            <Text
+              style={[
+                railStyles.label,
+                { color: colors.textMuted },
+                isFocused && { color: colors.primary, fontWeight: '600' },
+              ]}
+              numberOfLines={1}
+            >
               {label}
             </Text>
           </TouchableOpacity>
@@ -136,7 +157,6 @@ function NavigationRail({ state, descriptors, navigation }: BottomTabBarProps) {
 const layoutStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   containerWithRail: {
     paddingLeft: NAV_RAIL_WIDTH,
@@ -150,9 +170,7 @@ const railStyles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: NAV_RAIL_WIDTH,
-    backgroundColor: '#ffffff',
     borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
     paddingHorizontal: spacingScale.sm,
   },
   item: {
@@ -161,19 +179,11 @@ const railStyles = StyleSheet.create({
     paddingVertical: spacingScale.md,
     gap: spacingScale.xs,
   },
-  itemFocused: {
-    backgroundColor: 'rgba(99, 102, 241, 0.12)',
-  },
   iconWrapper: {
     marginBottom: spacingScale.xs * 0.5,
   },
   label: {
     fontSize: typographyScale.caption,
-    color: '#6b7280',
     textAlign: 'center',
-  },
-  labelFocused: {
-    color: '#1d4ed8',
-    fontWeight: '600',
   },
 });

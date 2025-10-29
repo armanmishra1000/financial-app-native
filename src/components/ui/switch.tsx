@@ -1,6 +1,8 @@
 import React from 'react';
 import { Switch as RNSwitch, View, Text, StyleSheet } from 'react-native';
 
+import { useThemeColors } from '../../context';
+
 interface SwitchProps {
   value?: boolean;
   onValueChange?: (value: boolean) => void;
@@ -14,10 +16,12 @@ export function Switch({
   disabled = false, 
   label
 }: SwitchProps) {
+  const colors = useThemeColors();
+
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={styles.label}>
+        <Text style={[styles.label, { color: colors.text }] }>
           {label}
         </Text>
       )}
@@ -25,9 +29,9 @@ export function Switch({
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
-        trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
-        thumbColor={value ? '#ffffff' : '#9ca3af'}
-        ios_backgroundColor="#e5e7eb"
+        trackColor={{ false: colors.divider, true: colors.primary }}
+        thumbColor={value ? colors.primaryForeground : colors.iconMuted}
+        ios_backgroundColor={colors.divider}
       />
     </View>
   );
@@ -42,6 +46,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
   },
 });

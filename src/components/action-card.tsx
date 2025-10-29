@@ -4,6 +4,7 @@ import { LucideIcon } from 'lucide-react-native';
 
 import { spacingScale, typographyScale } from '../constants/layout';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useThemeColors } from '../context';
 
 interface ActionCardProps {
   href?: string;
@@ -15,6 +16,7 @@ interface ActionCardProps {
 export function ActionCard({ href, icon: Icon, title, onPress }: ActionCardProps) {
   const { isMedium, isExpanded } = useResponsiveLayout();
   const animatedValue = React.useRef(new Animated.Value(1)).current;
+  const colors = useThemeColors();
 
   const layoutStyles = React.useMemo(
     () => [
@@ -56,7 +58,16 @@ export function ActionCard({ href, icon: Icon, title, onPress }: ActionCardProps
   };
 
   return (
-    <Animated.View style={[styles.card, ...layoutStyles, { transform: [{ scale: animatedValue }] }]}>
+    <Animated.View
+      style={[
+        styles.card,
+        ...layoutStyles,
+        {
+          backgroundColor: colors.mutedSurface,
+        },
+        { transform: [{ scale: animatedValue }] },
+      ]}
+    >
       <TouchableOpacity
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -65,8 +76,8 @@ export function ActionCard({ href, icon: Icon, title, onPress }: ActionCardProps
         activeOpacity={0.8}
       >
         <View style={styles.content}>
-          <Icon size={28} color="#3b82f6" style={styles.icon} />
-          <Text style={styles.title}>
+          <Icon size={28} color={colors.primary} style={styles.icon} />
+          <Text style={[styles.title, { color: colors.primary }] }>
             {title}
           </Text>
         </View>
@@ -77,7 +88,6 @@ export function ActionCard({ href, icon: Icon, title, onPress }: ActionCardProps
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#f3f4f6',
     borderRadius: 12,
     minHeight: 112,
     overflow: 'hidden',
@@ -111,7 +121,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '600',
-    color: '#3b82f6',
     textAlign: 'left',
   },
 });
