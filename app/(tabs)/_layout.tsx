@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
 import { BottomTabBar, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Home, Briefcase, BarChart2, Wallet, User } from 'lucide-react-native';
+import { Home, Briefcase, Wallet, User } from 'lucide-react-native';
 
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
@@ -56,13 +56,7 @@ export default function TabsLayout() {
         title: 'Invest',
         tabBarIcon: ({ color, size }) => <Briefcase color={color} size={size} />,
       }} />
-      {/* Plans page removed - single plan now shown in Invest page */}
-      {/* 
-      <Tabs.Screen name="plans" options={{
-        title: 'Plans',
-        tabBarIcon: ({ color, size }) => <BarChart2 color={color} size={size} />,
-      }} />
-      */}
+      
       <Tabs.Screen name="wallet" options={{
         title: 'Wallet',
         tabBarIcon: ({ color, size }) => <Wallet color={color} size={size} />,
