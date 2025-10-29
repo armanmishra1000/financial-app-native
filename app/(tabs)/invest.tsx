@@ -7,6 +7,8 @@ import { Button } from '../../src/components/ui/button';
 import { Input } from '../../src/components/ui/input';
 import { Select } from '../../src/components/ui/select';
 import { CurrencyToggle } from '../../src/components/ui/currency-toggle';
+import { ConfirmationModal } from '../../src/components/ui/confirmation-modal';
+import { SuccessModal } from '../../src/components/ui/success-modal';
 import { plans, Plan } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
 import { calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
@@ -25,6 +27,17 @@ export default function InvestScreen() {
   const [amount, setAmount] = React.useState<string>("500");
   const [investmentCurrency, setInvestmentCurrency] = React.useState<string>(user.displayCurrency);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false);
+  const [confirmModalData, setConfirmModalData] = React.useState({
+    title: '',
+    message: '',
+    amountUSD: 0
+  });
+  const [successModalData, setSuccessModalData] = React.useState({
+    title: '',
+    message: ''
+  });
   
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
@@ -123,23 +136,13 @@ export default function InvestScreen() {
       const displayAmount = investmentCurrency === 'USD' ? amountUSD : convertFromUSD(amountUSD, investmentCurrency);
       const lockExpiryDisplay = formatLockExpiry(result.investment.lockedUntil);
 
-      // Add delay for success alert as well
-      setTimeout(() => {
-        console.log('🏆 Showing success alert');
-        Alert.alert(
-          "Investment Successful!",
-          `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${lockExpiryDisplay}`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                console.log('🏠 Navigating to home screen...');
-                router.push('/home');
-              }
-            }
-          ]
-        );
-      }, 100);
+      // Show success modal instead of Alert.alert
+      console.log('🏆 Showing success modal');
+      setSuccessModalData({
+        title: "Investment Successful!",
+        message: `Your investment of ${formatCurrency(displayAmount, investmentCurrency)} in ${selectedPlan.name} has been processed. You'll start earning daily compound interest!\n\n⚠️ 30-Day Lock Period: Withdrawals blocked until ${lockExpiryDisplay}`
+      });
+      setShowSuccessModal(true);
     } catch (error) {
       console.log('💥 Unexpected error in executeInvestment:', error);
       setIsLoading(false);
@@ -174,33 +177,18 @@ export default function InvestScreen() {
       return;
     }
 
-    console.log('✅ Validation passed, showing confirmation dialog');
+    console.log('✅ Validation passed, showing confirmation modal');
     
-    // Ensure keyboard is dismissed before showing alert
+    // Ensure keyboard is dismissed before showing modal
     Keyboard.dismiss();
     
-    // Add delay to ensure UI is ready for alert display
-    setTimeout(() => {
-      console.log('🚨 About to show Alert.alert');
-      Alert.alert(
-        "Confirm Investment",
-        `Invest ${formatCurrency(numericAmount, investmentCurrency)} in ${selectedPlan.name}?`,
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => console.log('❌ User cancelled investment')
-          },
-          {
-            text: "Confirm",
-            onPress: () => {
-              console.log('✅ User confirmed investment');
-              executeInvestment(amountUSD);
-            }
-          }
-        ]
-      );
-    }, Platform.OS === 'ios' ? 200 : 100);
+    // Show custom modal instead of Alert.alert
+    setConfirmModalData({
+      title: "Confirm Investment",
+      message: `Invest ${formatCurrency(numericAmount, investmentCurrency)} in ${selectedPlan.name}?`,
+      amountUSD: amountUSD
+    });
+    setShowConfirmModal(true);
   }, [selectedPlan, amount, investmentCurrency, user.balance, processInvestment, displayBalance, displayMinDeposit, convertFromUSD, formatCurrency, executeInvestment]);
 
   React.useEffect(() => {
@@ -391,6 +379,34 @@ export default function InvestScreen() {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        visible={showConfirmModal}
+        title={confirmModalData.title}
+        message={confirmModalData.message}
+        onConfirm={() => {
+          console.log('✅ User confirmed investment in modal');
+          setShowConfirmModal(false);
+          executeInvestment(confirmModalData.amountUSD);
+        }}
+        onCancel={() => {
+          console.log('❌ User cancelled investment in modal');
+          setShowConfirmModal(false);
+        }}
+      />
+      
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title={successModalData.title}
+        message={successModalData.message}
+        onClose={() => {
+          console.log('🏠 Closing success modal and navigating home');
+          setShowSuccessModal(false);
+          router.push('/home');
+        }}
+      />
     </Animated.View>
   );
 }
