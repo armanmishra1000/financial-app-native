@@ -24,10 +24,34 @@ export default function InvestScreen() {
   const { user, processInvestment } = useData();
   const colors = useThemeColors();
 
-  // Fixed plan: 6 Month Plan (40% ROI for 180 days ≈ 20% per year)
-const selectedPlan = React.useMemo(() => {
-  return plans.find(p => p.id === 'p3'); // 6 Month Plan - 40% ROI
-}, []);
+  const defaultPlanId = React.useMemo(() => {
+    if (searchParams.plan && plans.some((plan) => plan.id === searchParams.plan)) {
+      return searchParams.plan;
+    }
+    return 'p2';
+  }, [searchParams.plan, plans]);
+
+  const [selectedPlanId, setSelectedPlanId] = React.useState<string>(defaultPlanId);
+
+  React.useEffect(() => {
+    if (searchParams.plan && plans.some((plan) => plan.id === searchParams.plan)) {
+      setSelectedPlanId(searchParams.plan);
+    }
+  }, [searchParams.plan, plans]);
+
+  const selectedPlan = React.useMemo(() => {
+    return plans.find((plan) => plan.id === selectedPlanId);
+  }, [selectedPlanId]);
+
+  const planOptions = React.useMemo(
+    () =>
+      plans.map((plan) => ({
+        label: plan.name,
+        value: plan.id,
+        description: `${plan.duration_days} days • ${plan.roi_percent}% ROI`,
+      })),
+    [plans],
+  );
   const [amount, setAmount] = React.useState<string>("500");
   const [investmentCurrency, setInvestmentCurrency] = React.useState<string>(user.displayCurrency);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -221,12 +245,22 @@ const selectedPlan = React.useMemo(() => {
               <View style={styles.formSpace}>
                 <View style={styles.planInfo}>
                   <Text style={[styles.planLabel, themeStyles.planLabel]}>Investment Plan</Text>
-                  <Text style={[styles.planName, themeStyles.planName]}>{selectedPlan?.name}</Text>
-                  <Text style={[styles.planDescription, themeStyles.planDescription]}>
-                  {selectedPlan?.roi_percent}% ROI • {selectedPlan?.duration_days} days
+                  <Select
+                    items={planOptions}
+                    value={selectedPlanId}
+                    onValueChange={setSelectedPlanId}
+                    placeholder="Select Plan"
+                    label="Select Plan"
+                    helperText="Compare each plan’s ROI and duration."
+                  />
+                  <Text style={[styles.planName, themeStyles.planName]}>
+                    {selectedPlan ? selectedPlan.name : 'No plan selected'}
                   </Text>
-                  
-                  helperText="Compare each plan’s ROI, duration, and minimum deposit."
+                  <Text style={[styles.planDescription, themeStyles.planDescription]}>
+                    {selectedPlan
+                      ? `${selectedPlan.roi_percent}% ROI • ${selectedPlan.duration_days} days`
+                      : 'Choose a plan to see ROI and total days.'}
+                  </Text>
                 </View>
 
                 <View style={styles.amountSection}>
