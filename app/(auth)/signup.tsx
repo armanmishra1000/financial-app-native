@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth, useAppState } from '../../src/context';
+import { useAuth, useAppState, useThemeColors } from '../../src/context';
 import { Input } from '../../src/components/ui/input';
 import { Button } from '../../src/components/ui/button';
 import { Card } from '../../src/components/ui/card';
@@ -30,6 +30,8 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function SignupScreen() {
   const { signup } = useAuth();
   const { isHydrated } = useAppState();
+  const colors = useThemeColors();
+  const themedStyles = useMemo(() => createStyles(colors), [colors]);
   const [isLoading, setIsLoading] = useState(false);
   
 
@@ -43,8 +45,13 @@ export default function SignupScreen() {
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
       country: 'US',
       language: 'en',
+      password: '',
+      confirmPassword: '',
     },
   });
 
@@ -73,21 +80,21 @@ export default function SignupScreen() {
 
   if (!isHydrated) {
     return (
-      <View style={styles.container}>
+      <View style={themedStyles.container}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join us and start investing</Text>
+    <ScrollView style={themedStyles.container} showsVerticalScrollIndicator={false}>
+      <View style={themedStyles.header}>
+        <Text style={themedStyles.title}>Create Account</Text>
+        <Text style={themedStyles.subtitle}>Join us and start investing</Text>
       </View>
 
-      <Card style={styles.card}>
-        <View style={styles.form}>
+      <Card style={themedStyles.card}>
+        <View style={themedStyles.form}>
           <Input
             label="Full Name"
             placeholder="Enter your full name"
@@ -153,19 +160,19 @@ export default function SignupScreen() {
           />
 
           {errors.root?.message && (
-            <Text style={styles.errorText}>{errors.root.message}</Text>
+            <Text style={themedStyles.errorText}>{errors.root.message}</Text>
           )}
 
           <Button
             onPress={handleSubmit(onSubmit)}
             disabled={isLoading}
-            style={styles.button}
+            style={themedStyles.button}
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
           </Button>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
+          <View style={themedStyles.footer}>
+            <Text style={themedStyles.footerText}>Already have an account? </Text>
             <Button
               variant="link"
               onPress={() => router.push('/(auth)/login')}
@@ -179,48 +186,48 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginVertical: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  card: {
-    padding: 24,
-  },
-  form: {
-    gap: 16,
-  },
-  
-  button: {
-    marginTop: 8,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 14,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  footerText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-});
+const createStyles = (colors: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: 20,
+    },
+    header: {
+      alignItems: 'center',
+      marginVertical: 32,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: colors.heading,
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
+    },
+    card: {
+      padding: 24,
+    },
+    form: {
+      gap: 16,
+    },
+    button: {
+      marginTop: 8,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    footerText: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+  });

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth, useAppState } from '../../src/context';
+import { useAuth, useAppState, useThemeColors } from '../../src/context';
 import { Input } from '../../src/components/ui/input';
 import { Button } from '../../src/components/ui/button';
 import { Card } from '../../src/components/ui/card';
@@ -19,6 +19,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginScreen() {
   const { login } = useAuth();
   const { isHydrated } = useAppState();
+  const colors = useThemeColors();
+  const themedStyles = useMemo(() => createStyles(colors), [colors]);
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -28,6 +30,10 @@ export default function LoginScreen() {
     setError,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
   const onSubmit = async (data: LoginFormData) => {
@@ -49,21 +55,21 @@ export default function LoginScreen() {
 
   if (!isHydrated) {
     return (
-      <View style={styles.container}>
+      <View style={themedStyles.container}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+    <View style={themedStyles.container}>
+      <View style={themedStyles.header}>
+        <Text style={themedStyles.title}>Welcome Back</Text>
+        <Text style={themedStyles.subtitle}>Sign in to your account</Text>
       </View>
 
-      <Card style={styles.card}>
-        <View style={styles.form}>
+      <Card style={themedStyles.card}>
+        <View style={themedStyles.form}>
           <Input
             label="Email"
             placeholder="Enter your email"
@@ -82,19 +88,19 @@ export default function LoginScreen() {
           />
 
           {errors.root?.message && (
-            <Text style={styles.errorText}>{errors.root.message}</Text>
+            <Text style={themedStyles.errorText}>{errors.root.message}</Text>
           )}
 
           <Button
             onPress={handleSubmit(onSubmit)}
             disabled={isLoading}
-            style={styles.button}
+            style={themedStyles.button}
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+          <View style={themedStyles.footer}>
+            <Text style={themedStyles.footerText}>Don't have an account? </Text>
             <Button
               variant="link"
               onPress={() => router.push('/(auth)/signup')}
@@ -105,77 +111,78 @@ export default function LoginScreen() {
         </View>
       </Card>
 
-      <View style={styles.demoInfo}>
-        <Text style={styles.demoTitle}>Demo Accounts:</Text>
-        <Text style={styles.demoText}>Email: demo@test.com</Text>
-        <Text style={styles.demoText}>Password: password123</Text>
-        <Text style={styles.demoText}>Email: alex@test.com</Text>
-        <Text style={styles.demoText}>Password: test123</Text>
+      <View style={themedStyles.demoInfo}>
+        <Text style={themedStyles.demoTitle}>Demo Accounts:</Text>
+        <Text style={themedStyles.demoText}>Email: demo@test.com</Text>
+        <Text style={themedStyles.demoText}>Password: password123</Text>
+        <Text style={themedStyles.demoText}>Email: alex@test.com</Text>
+        <Text style={themedStyles.demoText}>Password: test123</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 20,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  card: {
-    padding: 24,
-    marginBottom: 24,
-  },
-  form: {
-    gap: 16,
-  },
-  button: {
-    marginTop: 8,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  footerText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  demoInfo: {
-    backgroundColor: '#f3f4f6',
-    padding: 16,
-    borderRadius: 8,
-  },
-  demoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  demoText: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-});
+const createStyles = (colors: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: 20,
+      justifyContent: 'center',
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: colors.heading,
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textMuted,
+    },
+    card: {
+      padding: 24,
+      marginBottom: 24,
+    },
+    form: {
+      gap: 16,
+    },
+    button: {
+      marginTop: 8,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+      textAlign: 'center',
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    footerText: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    demoInfo: {
+      backgroundColor: colors.surfaceSubtle,
+      padding: 16,
+      borderRadius: 8,
+    },
+    demoTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    demoText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginBottom: 2,
+    },
+  });

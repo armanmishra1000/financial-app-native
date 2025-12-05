@@ -80,10 +80,9 @@ export const transactions: Transaction[] = [
 ];
 
 export const plans: Plan[] = [
-    { id: "p1", name: "1 Week Plan", duration_days: 7, roi_percent: 2.0, bond_percent: 1.2, platform_percent: 0.8, min_deposit: 1 },
-    { id: "p2", name: "1 Month Plan", duration_days: 30, roi_percent: 10.0, bond_percent: 6.0, platform_percent: 4.0, min_deposit: 1 },
-    { id: "p3", name: "6 Month Plan", duration_days: 180, roi_percent: 40.0, bond_percent: 24.0, platform_percent: 16.0, min_deposit: 1 },
-    { id: "p4", name: "1 Year Plan", duration_days: 365, roi_percent: 90.0, bond_percent: 54.0, platform_percent: 36.0, min_deposit: 1 }
+  { id: "p1", name: "3 Month Plan", duration_days: 90, roi_percent: 5.0, bond_percent: 3.0, platform_percent: 2.0, min_deposit: 1 },
+  { id: "p2", name: "6 Month Plan", duration_days: 180, roi_percent: 10.0, bond_percent: 6.0, platform_percent: 4.0, min_deposit: 1 },
+  { id: "p3", name: "1 Year Plan", duration_days: 365, roi_percent: 20.0, bond_percent: 12.0, platform_percent: 8.0, min_deposit: 1 },
 ];
 
 export const plansById: Readonly<Record<string, Plan>> = plans.reduce<Record<string, Plan>>((accumulator, plan) => {

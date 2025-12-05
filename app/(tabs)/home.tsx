@@ -251,13 +251,15 @@ export default function HomeScreen() {
           </TouchableOpacity>
           </View>
 
-        <Card>
+        <Card style={[styles.balanceCard, themeStyles.balanceCard]}>
           <CardHeader>
             <View style={styles.balanceHeader}>
               <Text style={[styles.balanceTitle, themeStyles.balanceTitle]}>Account Balance</Text>
               <TouchableOpacity
                 style={[styles.balanceToggle, themeStyles.balanceToggle]}
                 onPress={toggleBalanceVisibility}
+                accessibilityRole="button"
+                accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
               >
                 {isBalanceVisible ? (
                   <EyeOff size={16} color={colors.iconMuted} />
@@ -279,36 +281,32 @@ export default function HomeScreen() {
                   {isBalanceVisible ? formattedBalance : maskedBalance}
                 </Text>
               </View>
-            </View>
-            
-            {/* Profit Display */}
-            <View style={styles.profitRow}>
-              <Text style={[styles.profitAmount, themeStyles.profitAmount]}>
-                +{formatCurrency(convertFromUSD(totalProfit, user.displayCurrency), user.displayCurrency)}
-              </Text>
-              <Text style={[styles.profitPercent, themeStyles.profitPercent]}>
-                +{profitPercent.toFixed(2)}%
-              </Text>
+              <View style={styles.balanceChangeRow}>
+                <ArrowUpRight size={14} color={colors.success} />
+                <Text style={[styles.balanceChangeText, themeStyles.balanceChangeText]}>
+                  +{profitPercent.toFixed(1)}% in last 24h
+                </Text>
+              </View>
             </View>
 
-            {/* Action Buttons */}
             <View style={styles.balanceActions}>
+              {/* Account Balance Actions */}
               <Button 
-                size="sm"
-                variant="default"
+                size="lg"
+                variant="outline"
                 onPress={() => router.push('/wallet')}
-                style={[styles.actionButton, themeStyles.depositButton]}
+                style={[styles.actionButton, themeStyles.actionButton]}
               >
-                <ArrowDownToLine size={16} color={colors.primaryForeground} />
+                <ArrowDownToLine size={16} color={colors.text} />
                 <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Deposit</Text>
               </Button>
               <Button 
-                size="sm"
+                size="lg"
                 variant="outline"
                 onPress={() => router.push('/wallet')}
-                style={[styles.actionButton, themeStyles.withdrawButton]}
+                style={[styles.actionButton, themeStyles.actionButton]}
               >
-                <ArrowUpFromLine size={16} color={colors.primary} />
+                <ArrowUpFromLine size={16} color={colors.text} />
                 <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Withdraw</Text>
               </Button>
             </View>
@@ -432,6 +430,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  balanceCard: {
+    borderRadius: spacingScale.md,
+    borderWidth: 1,
+  },
   balanceTitle: {
     fontSize: typographyScale.bodySmall,
     fontWeight: '500',
@@ -445,6 +447,7 @@ const styles = StyleSheet.create({
   },
   balanceAmountContainer: {
     marginTop: spacingScale.xs,
+    gap: spacingScale.xs,
   },
   balanceAmount: {
     fontSize: 48,
@@ -455,6 +458,15 @@ const styles = StyleSheet.create({
     borderRadius: spacingScale.sm,
     paddingHorizontal: spacingScale.xs,
     paddingVertical: spacingScale.xs,
+  },
+  balanceChangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingScale.xs,
+  },
+  balanceChangeText: {
+    fontSize: typographyScale.caption,
+    fontWeight: '600',
   },
   balanceValueHidden: {
   },
@@ -490,6 +502,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingScale.xs,
+    borderRadius: spacingScale.sm,
+    paddingVertical: spacingScale.xs,
   },
   actionButtonText: {
     fontSize: typographyScale.bodySmall,
@@ -689,6 +703,10 @@ const createHomeThemeStyles = (colors: ThemeColors) => ({
   balanceAmount: {
     color: colors.heading,
   },
+  balanceCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
   balanceValueHidden: {
     backgroundColor: colors.surfaceSubtle,
   },
@@ -698,14 +716,14 @@ const createHomeThemeStyles = (colors: ThemeColors) => ({
   profitPercent: {
     color: colors.success,
   },
+  balanceChangeText: {
+    color: colors.success,
+  },
+  actionButton: {
+    backgroundColor: colors.mutedSurface,
+  },
   actionButtonText: {
     color: colors.text,
-  },
-  depositButton: {
-    backgroundColor: colors.primary,
-  },
-  withdrawButton: {
-    backgroundColor: colors.mutedSurface,
   },
   sectionTitle: {
     color: colors.heading,
