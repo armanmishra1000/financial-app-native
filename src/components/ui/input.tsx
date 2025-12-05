@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextInput, TextInputProps, View, Text, StyleSheet } from 'react-native';
-import { Control, Controller, FieldValues, FieldPath } from 'react-hook-form';
+import { Control, Controller } from 'react-hook-form';
+import { useThemeColors } from '../../context';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -11,6 +12,9 @@ interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, error, helperText, style, control, name, ...props }: InputProps) {
+  const colors = useThemeColors();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
+
   if (control && name) {
     return (
       <Controller
@@ -29,8 +33,8 @@ export function Input({ label, error, helperText, style, control, name, ...props
                 (fieldError?.message || error) && styles.inputError,
                 style
               ]}
-              placeholderTextColor="#9ca3af"
-              value={value}
+              placeholderTextColor={colors.textMuted}
+              value={value ?? ''}
               onChangeText={onChange}
               onBlur={onBlur}
               {...props}
@@ -64,7 +68,7 @@ export function Input({ label, error, helperText, style, control, name, ...props
           error && styles.inputError,
           style
         ]}
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={colors.textMuted}
         {...props}
       />
       {error && (
@@ -81,34 +85,35 @@ export function Input({ label, error, helperText, style, control, name, ...props
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  input: {
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    color: '#111827',
-  },
-  inputError: {
-    borderColor: '#ef4444',
-  },
-  error: {
-    fontSize: 14,
-    color: '#ef4444',
-  },
-  helper: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-});
+const createStyles = (colors: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    container: {
+      gap: 8,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.textSecondary,
+    },
+    input: {
+      width: '100%',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      backgroundColor: colors.inputBackground,
+      color: colors.text,
+    },
+    inputError: {
+      borderColor: colors.danger,
+    },
+    error: {
+      fontSize: 14,
+      color: colors.danger,
+    },
+    helper: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+  });

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 
 import { getThemeColors, ResolvedTheme, ThemeColors } from '../theme/colors';
 
@@ -20,8 +20,18 @@ const ThemeContext = React.createContext<ThemeContextState | undefined>(undefine
 const THEME_STORAGE_KEY = 'app_theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = React.useState<Theme>('system');
+  const [theme, setThemeState] = React.useState<Theme>('dark');
+  const [hasLoadedTheme, setHasLoadedTheme] = React.useState(false);
   const systemColorScheme = useColorScheme();
+
+  const applyThemePreference = React.useCallback((nextTheme: Theme) => {
+    setThemeState(nextTheme);
+    const colorScheme = nextTheme === 'system' ? null : nextTheme;
+    const appearanceWithSetter = Appearance as typeof Appearance & {
+      setColorScheme?: (scheme: 'light' | 'dark' | null) => void;
+    };
+    appearanceWithSetter.setColorScheme?.(colorScheme);
+  }, []);
 
   // Load theme from storage on mount
   React.useEffect(() => {
@@ -29,15 +39,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       try {
         const storedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
         if (storedTheme) {
-          setThemeState(storedTheme as Theme);
+          applyThemePreference(storedTheme as Theme);
+        } else {
+          await AsyncStorage.setItem(THEME_STORAGE_KEY, 'dark');
+          applyThemePreference('dark');
         }
       } catch (error) {
         console.error('Error loading theme from storage:', error);
+        applyThemePreference('dark');
+      } finally {
+        setHasLoadedTheme(true);
       }
     };
 
-    loadTheme();
-  }, []);
+    void loadTheme();
+  }, [applyThemePreference]);
 
   const resolvedTheme = React.useMemo<ResolvedTheme>(() => {
     if (theme === 'dark') return 'dark';
@@ -47,14 +63,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const colors = React.useMemo(() => getThemeColors(resolvedTheme), [resolvedTheme]);
 
-  const setTheme = React.useCallback(async (newTheme: Theme) => {
-    try {
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
-      setThemeState(newTheme);
-    } catch (error) {
-      console.error('Error saving theme to storage:', error);
-    }
-  }, []);
+  const setTheme = React.useCallback(
+    async (newTheme: Theme) => {
+      if (theme === newTheme && hasLoadedTheme) {
+        return;
+      }
+
+      applyThemePreference(newTheme);
+
+      try {
+        await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
+      } catch (error) {
+        console.error('Error saving theme to storage:', error);
+      }
+    },
+    [applyThemePreference, hasLoadedTheme, theme],
+  );
 
   const toggleTheme = React.useCallback(() => {
     const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
