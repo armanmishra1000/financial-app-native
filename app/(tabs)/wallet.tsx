@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
-import { ArrowDownToLine, ArrowUpFromLine, FilterX } from 'lucide-react-native';
+import { ArrowDownToLine, ArrowUpFromLine, FilterX, Eye, EyeOff, ArrowUpRight } from 'lucide-react-native';
 import { useData, useThemeColors } from '../../src/context';
 import { Card, CardContent, CardHeader, CardTitle } from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
@@ -14,6 +14,7 @@ import { isInvestmentLocked, formatLockExpiry } from '../../src/lib/investment-u
 import { convertFromUSD, convertToUSD } from '../../src/lib/currency-utils';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
+import { useInvestmentCalculations } from '../../src/hooks/useInvestmentCalculations';
 import type { ThemeColors } from '../../src/theme/colors';
 
 type DialogType = 'Deposit' | 'Withdrawal' | null;
@@ -22,8 +23,10 @@ type DialogType = 'Deposit' | 'Withdrawal' | null;
 export default function WalletScreen() {
   const { user, transactions, addTransaction, investments } = useData();
   const colors = useThemeColors();
+  const { getInvestmentCurrentValue } = useInvestmentCalculations();
   const [dialogOpen, setDialogOpen] = React.useState<DialogType>(null);
   const [filter, setFilter] = React.useState<Transaction['type'] | 'All'>('All');
+  const [isBalanceVisible, setIsBalanceVisible] = React.useState(true);
   
   const [amount, setAmount] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -32,7 +35,6 @@ export default function WalletScreen() {
   const {
     horizontalContentPadding,
     maxContentWidth,
-    isMedium,
     isExpanded,
     safeAreaInsets,
   } = useResponsiveLayout();
@@ -49,6 +51,29 @@ export default function WalletScreen() {
     [horizontalContentPadding, maxContentWidth, safeAreaInsets.bottom],
   );
   const themeStyles = React.useMemo(() => createWalletThemeStyles(colors), [colors]);
+
+  const formattedBalance = React.useMemo(
+    () => formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency),
+    [user.balance, user.displayCurrency]
+  );
+  const maskedBalance = React.useMemo(
+    () => formattedBalance.replace(/[0-9.,]/g, '•'),
+    [formattedBalance]
+  );
+  const activeInvestments = React.useMemo(
+    () => investments.filter(inv => inv.status === 'Active'),
+    [investments]
+  );
+  const totalProfit = React.useMemo(() => {
+    return activeInvestments.reduce((sum, inv) => {
+      const currentValue = getInvestmentCurrentValue(inv.id);
+      return sum + (currentValue - inv.amount);
+    }, 0);
+  }, [activeInvestments, getInvestmentCurrentValue]);
+  const profitPercent = React.useMemo(() => {
+    if (user.balance === 0) return 0;
+    return (totalProfit / user.balance) * 100;
+  }, [totalProfit, user.balance]);
 
   React.useEffect(() => {
     Animated.parallel([
@@ -85,6 +110,10 @@ export default function WalletScreen() {
   const handleDialogClose = () => {
     setDialogOpen(null);
     setAmount('');
+  };
+
+  const toggleBalanceVisibility = () => {
+    setIsBalanceVisible(prev => !prev);
   };
 
   const handleSubmit = () => {
@@ -168,36 +197,65 @@ export default function WalletScreen() {
 
           
 
-        {/* Balance Card */}
-        <Card>
+        {/* Account Balance Card */}
+        <Card style={[styles.balanceCard, themeStyles.balanceCard]}>
           <CardHeader>
-            <Text style={[styles.balanceLabel, themeStyles.balanceLabel]}>Total Balance</Text>
-            <Text style={[styles.balanceAmount, themeStyles.balanceAmount]}>{formatCurrency(convertFromUSD(user.balance, user.displayCurrency), user.displayCurrency)}</Text>
+            <View style={styles.balanceHeader}>
+              <Text style={[styles.balanceTitle, themeStyles.balanceTitle]}>Account Balance</Text>
+              <TouchableOpacity
+                style={[styles.balanceToggle, themeStyles.balanceToggle]}
+                onPress={toggleBalanceVisibility}
+                accessibilityRole="button"
+                accessibilityLabel={isBalanceVisible ? 'Hide balance' : 'Show balance'}
+              >
+                {isBalanceVisible ? (
+                  <EyeOff size={16} color={colors.iconMuted} />
+                ) : (
+                  <Eye size={16} color={colors.iconMuted} />
+                )}
+              </TouchableOpacity>
+            </View>
           </CardHeader>
           <CardContent>
-            {/* Action buttons */}
-            {
-              <View style={[styles.actionButtons, isMedium ? styles.actionButtonsUnwrapped : null]}>
-                <Button 
-                  variant="outline"
-                  size="lg"
-                  onPress={() => handleDialogOpen('Deposit')}
-                  style={[styles.actionButton, themeStyles.actionButton]}
-                >
-                  <ArrowDownToLine size={16} color={colors.text} />
-                  <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Deposit</Text>
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="lg"
-                  onPress={() => handleDialogOpen('Withdrawal')}
-                  style={[styles.actionButton, themeStyles.actionButton]}
-                >
-                  <ArrowUpFromLine size={16} color={colors.text} />
-                  <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Withdraw</Text>
-                </Button>
+            <View style={styles.balanceAmountContainer}>
+              <View
+                style={[
+                  styles.balanceValueWrapper,
+                  !isBalanceVisible && themeStyles.balanceValueHidden,
+                ]}
+              >
+                <Text style={[styles.balanceAmount, themeStyles.balanceAmount]}>
+                  {isBalanceVisible ? formattedBalance : maskedBalance}
+                </Text>
               </View>
-            }
+              <View style={styles.balanceChangeRow}>
+                <ArrowUpRight size={14} color={colors.success} />
+                <Text style={[styles.balanceChangeText, themeStyles.balanceChangeText]}>
+                  +{profitPercent.toFixed(1)}% in last 24h
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.balanceActions}>
+              <Button 
+                variant="outline"
+                size="lg"
+                onPress={() => handleDialogOpen('Deposit')}
+                style={[styles.actionButton, themeStyles.actionButton]}
+              >
+                <ArrowDownToLine size={16} color={colors.text} />
+                <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Deposit</Text>
+              </Button>
+              <Button 
+                variant="outline"
+                size="lg"
+                onPress={() => handleDialogOpen('Withdrawal')}
+                style={[styles.actionButton, themeStyles.actionButton]}
+              >
+                <ArrowUpFromLine size={16} color={colors.text} />
+                <Text style={[styles.actionButtonText, themeStyles.actionButtonText]}>Withdraw</Text>
+              </Button>
+            </View>
           </CardContent>
         </Card>
 
@@ -339,23 +397,53 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  balanceLabel: {
-    fontSize: typographyScale.bodySmall,
-    fontWeight: '500',
-  },
   balanceAmount: {
     fontSize: 48,
     fontWeight: 'bold',
-    marginTop: spacingScale.xs,
     letterSpacing: -1.5,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacingScale.md,
+  balanceCard: {
+    borderRadius: spacingScale.md,
+    borderWidth: 1,
   },
-  actionButtonsUnwrapped: {
-    flexWrap: 'nowrap',
+  balanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  balanceTitle: {
+    fontSize: typographyScale.bodySmall,
+    fontWeight: '500',
+  },
+  balanceToggle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  balanceAmountContainer: {
+    marginTop: spacingScale.xs,
+    gap: spacingScale.xs,
+  },
+  balanceValueWrapper: {
+    borderRadius: spacingScale.sm,
+    paddingHorizontal: spacingScale.xs,
+    paddingVertical: spacingScale.xs,
+  },
+  balanceChangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingScale.xs,
+  },
+  balanceChangeText: {
+    fontSize: typographyScale.caption,
+    fontWeight: '600',
+  },
+  balanceActions: {
+    flexDirection: 'row',
+    gap: spacingScale.sm,
+    marginTop: spacingScale.md,
   },
   actionButton: {
     flex: 1,
@@ -478,11 +566,24 @@ const createWalletThemeStyles = (colors: ThemeColors) => ({
   subtitle: {
     color: colors.textMuted,
   },
-  balanceLabel: {
-    color: colors.textMuted,
-  },
   balanceAmount: {
     color: colors.heading,
+  },
+  balanceCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
+  balanceTitle: {
+    color: colors.textMuted,
+  },
+  balanceToggle: {
+    backgroundColor: colors.mutedSurface,
+  },
+  balanceValueHidden: {
+    backgroundColor: colors.surfaceSubtle,
+  },
+  balanceChangeText: {
+    color: colors.success,
   },
   actionButton: {
     backgroundColor: colors.mutedSurface,
