@@ -6,6 +6,75 @@ export interface ROIBreakdown {
   total_percent: number;
 }
 
+export interface FixedDailyReturnProjection {
+  principal: number;
+  dailyRate: number;
+  dailyEarnings: number;
+  totalGrowth: number;
+  finalValue: number;
+  daysUsed: number;
+}
+
+export const FIXED_DAILY_RATE_PERCENT = 0.05479;
+const FIXED_DAILY_RATE_DECIMAL = FIXED_DAILY_RATE_PERCENT / 100;
+
+const PLAN_DAYS_BY_ID: Record<string, number> = {
+  p1: 90,
+  p2: 180,
+  p3: 365,
+};
+
+const NORMALIZED_PLAN_ID_MAP: Record<string, string> = Object.keys(PLAN_DAYS_BY_ID).reduce(
+  (accumulator, planId) => {
+    accumulator[planId.toLowerCase()] = planId;
+    return accumulator;
+  },
+  {} as Record<string, string>,
+);
+
+export function getFixedPlanDays(planId: string, fallbackDays = 0): number {
+  if (!planId) {
+    return fallbackDays;
+  }
+
+  const normalizedId = planId.toLowerCase();
+  const canonicalId = NORMALIZED_PLAN_ID_MAP[normalizedId];
+  if (canonicalId) {
+    return PLAN_DAYS_BY_ID[canonicalId];
+  }
+
+  return fallbackDays;
+}
+
+export function calculateFixedDailyReturns(
+  principalUSD: number,
+  planId: string,
+  fallbackDays = 0,
+): FixedDailyReturnProjection | null {
+  if (!Number.isFinite(principalUSD) || principalUSD <= 0) {
+    return null;
+  }
+
+  const daysUsed = getFixedPlanDays(planId, fallbackDays);
+  if (daysUsed <= 0) {
+    return null;
+  }
+
+  const dailyRate = FIXED_DAILY_RATE_DECIMAL;
+  const finalValue = principalUSD * Math.pow(1 + dailyRate, daysUsed);
+  const totalGrowth = finalValue - principalUSD;
+  const dailyEarnings = principalUSD * dailyRate;
+
+  return {
+    principal: principalUSD,
+    dailyRate,
+    dailyEarnings,
+    totalGrowth,
+    finalValue,
+    daysUsed,
+  };
+}
+
 /**
  * Convert annual percentage rate to daily compound rate
  * Formula: dailyRate = (1 + annualRate)^(1/365) - 1

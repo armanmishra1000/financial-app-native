@@ -10,9 +10,9 @@ import { CurrencyToggle } from '../../src/components/ui/currency-toggle';
 import { ConfirmationModal } from '../../src/components/ui/confirmation-modal';
 import { SuccessModal } from '../../src/components/ui/success-modal';
 import { Star } from 'lucide-react-native';
-import { plans, Plan } from '../../src/lib/data';
+import { plans } from '../../src/lib/data';
 import { formatCurrency } from '../../src/lib/utils';
-import { calculateExpectedReturn, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
+import { calculateFixedDailyReturns, formatDailyRate, getROIBreakdown, formatLockExpiry } from '../../src/lib/investment-utils';
 import { convertFromUSD, convertToUSD, getExchangeRateString } from '../../src/lib/currency-utils';
 import { spacingScale, typographyScale } from '../../src/constants/layout';
 import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
@@ -24,20 +24,18 @@ export default function InvestScreen() {
   const { user, processInvestment } = useData();
   const colors = useThemeColors();
 
-  const defaultPlanId = React.useMemo(() => {
+  const planIdFromParams = React.useMemo(() => {
     if (searchParams.plan && plans.some((plan) => plan.id === searchParams.plan)) {
       return searchParams.plan;
     }
-    return 'p2';
-  }, [searchParams.plan, plans]);
+    return undefined;
+  }, [searchParams.plan]);
 
-  const [selectedPlanId, setSelectedPlanId] = React.useState<string>(defaultPlanId);
+  const [selectedPlanId, setSelectedPlanId] = React.useState<string | undefined>(planIdFromParams);
 
   React.useEffect(() => {
-    if (searchParams.plan && plans.some((plan) => plan.id === searchParams.plan)) {
-      setSelectedPlanId(searchParams.plan);
-    }
-  }, [searchParams.plan, plans]);
+    setSelectedPlanId(planIdFromParams);
+  }, [planIdFromParams]);
 
   const selectedPlan = React.useMemo(() => {
     return plans.find((plan) => plan.id === selectedPlanId);
@@ -118,15 +116,14 @@ export default function InvestScreen() {
     return convertFromUSD(minDeposit, investmentCurrency);
   }, [investmentCurrency, selectedPlan]);
 
-  const investmentCalculation = React.useMemo(() => {
+  const fixedReturnProjection = React.useMemo(() => {
     if (!selectedPlan || !amount) return null;
     const numericAmount = parseFloat(amount);
-    if (isNaN(numericAmount)) return null;
-    
-    // Convert to USD for calculation
+    if (!Number.isFinite(numericAmount)) return null;
+
     const amountUSD = investmentCurrency === 'USD' ? numericAmount : convertToUSD(numericAmount, investmentCurrency);
-    
-    return calculateExpectedReturn(amountUSD, selectedPlan.roi_percent, selectedPlan.duration_days);
+
+    return calculateFixedDailyReturns(amountUSD, selectedPlan.id, selectedPlan.duration_days);
   }, [selectedPlan, amount, investmentCurrency]);
 
   const roiBreakdown = React.useMemo(() => {
@@ -258,7 +255,7 @@ export default function InvestScreen() {
                   </Text>
                   <Text style={[styles.planDescription, themeStyles.planDescription]}>
                     {selectedPlan
-                      ? `${selectedPlan.roi_percent}% ROI • ${selectedPlan.duration_days} days`
+                      ? `${selectedPlan.roi_percent}% ROI • ${(fixedReturnProjection?.daysUsed ?? selectedPlan.duration_days)} days`
                       : 'Choose a plan to see ROI and total days.'}
                   </Text>
                 </View>
@@ -353,30 +350,34 @@ export default function InvestScreen() {
                 )}
                 
                 {/* Compound Interest Details */}
-                {investmentCalculation && (
+                {fixedReturnProjection && (
                   <View style={styles.compoundSection}>
                     <Text style={[styles.compoundTitle, themeStyles.compoundTitle]}>Expected Returns</Text>
                     <View style={styles.compoundRow}>
                       <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Daily Rate</Text>
-                      <Text style={[styles.compoundValue, themeStyles.compoundValue]}>{formatDailyRate(investmentCalculation.dailyRate)}</Text>
+                      <Text style={[styles.compoundValue, themeStyles.compoundValue]}>{formatDailyRate(fixedReturnProjection.dailyRate)}</Text>
                     </View>
                     <View style={styles.compoundRow}>
                       <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Daily Earnings</Text>
                       <Text style={[styles.compoundValue, themeStyles.compoundValue]}>
-                        +{formatCurrency(convertFromUSD(investmentCalculation.dailyEarnings, investmentCurrency), investmentCurrency)}
+                        +{formatCurrency(convertFromUSD(fixedReturnProjection.dailyEarnings, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
                     <View style={styles.compoundRow}>
-                      <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Total Growth ({selectedPlan?.duration_days} days)</Text>
+                      <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Total Growth ({fixedReturnProjection.daysUsed} days)</Text>
                       <Text style={[styles.profitValue, themeStyles.profitValue]}>
-                        +{formatCurrency(convertFromUSD(investmentCalculation.profit, investmentCurrency), investmentCurrency)}
+                        +{formatCurrency(convertFromUSD(fixedReturnProjection.totalGrowth, investmentCurrency), investmentCurrency)}
                       </Text>
+                    </View>
+                    <View style={styles.compoundRow}>
+                      <Text style={[styles.compoundLabel, themeStyles.compoundLabel]}>Days Used</Text>
+                      <Text style={[styles.compoundValue, themeStyles.compoundValue]}>{fixedReturnProjection.daysUsed}</Text>
                     </View>
                     <View style={[styles.summaryDivider, themeStyles.summaryDivider]} />
                     <View style={styles.summaryRow}>
                       <Text style={[styles.totalLabel, themeStyles.totalLabel]}>Final Value</Text>
                       <Text style={[styles.totalValue, themeStyles.totalValue]}>
-                        {formatCurrency(convertFromUSD(investmentCalculation.total, investmentCurrency), investmentCurrency)}
+                        {formatCurrency(convertFromUSD(fixedReturnProjection.finalValue, investmentCurrency), investmentCurrency)}
                       </Text>
                     </View>
                   </View>
