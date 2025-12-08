@@ -67,7 +67,7 @@ export default function VerifyOTPScreen() {
       <View style={themedStyles.header}>
         <Text style={themedStyles.title}>Verify Your Identity</Text>
         <Text style={themedStyles.subtitle}>
-          We've sent a 6-digit code to your email
+          We’ve sent a 6-digit code to your email
         </Text>
       </View>
 
@@ -89,7 +89,7 @@ export default function VerifyOTPScreen() {
           )}
 
           <View style={themedStyles.resendContainer}>
-            <Text style={themedStyles.resendText}>Didn't receive the code?</Text>
+            <Text style={themedStyles.resendText}>Didn’t receive the code?</Text>
             <Button
               variant="link"
               onPress={handleResendOTP}
