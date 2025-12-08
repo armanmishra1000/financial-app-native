@@ -46,14 +46,14 @@ export function Avatar({ src, alt, size = 40, fallback }: AvatarProps) {
   const backgroundColor = getColorFromText(fallback || alt || '');
 
   return (
-    <View 
+    <View
       style={[
         styles.container,
-        { 
-          width: size, 
+        {
+          width: size,
           height: size,
-          backgroundColor 
-        }
+          backgroundColor,
+        },
       ]}
     >
       {src && !imageError && imageLoaded ? (
@@ -65,10 +65,10 @@ export function Avatar({ src, alt, size = 40, fallback }: AvatarProps) {
           onLoad={() => setImageLoaded(true)}
         />
       ) : (
-        <Text 
+        <Text
           style={[
             styles.fallback,
-            { fontSize: size * 0.4 }
+            { fontSize: size * 0.4 },
           ]}
         >
           {initials}

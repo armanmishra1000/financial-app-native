@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Animated, Easing, StyleProp, ViewStyle, FlexAlignType } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Bell, CreditCard, Shield, FileText, HelpCircle, LogOut, SunMoon, Globe } from 'lucide-react-native';
 import { useData, useAuth, useTheme, useThemeColors } from '../../src/context';
@@ -21,7 +21,6 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { isDarkMode, setTheme } = useTheme();
   const colors = useThemeColors();
-  const [isComingSoonOpen, setIsComingSoonOpen] = React.useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const translateYAnim = React.useRef(new Animated.Value(20)).current;
   const {
@@ -94,10 +93,6 @@ export default function ProfileScreen() {
     const newTheme = checked ? 'dark' : 'light';
     void setTheme(newTheme);
     Alert.alert("Theme Changed", `Theme changed to ${newTheme === 'dark' ? 'Dark' : 'Light'} Mode`);
-  };
-
-  const handleComingSoon = () => {
-    setIsComingSoonOpen(true);
   };
 
   const ProfileMenuItem = ({ icon: Icon, label, onPress }: { icon: MenuIcon; label: string; onPress: () => void }) => (
@@ -203,19 +198,19 @@ export default function ProfileScreen() {
                 <ProfileMenuItem
                   icon={HelpCircle}
                   label="Help Center"
-                  onPress={handleComingSoon}
+                  onPress={() => router.push('/profile/help-center')}
                 />
                 <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <ProfileMenuItem
                   icon={Shield}
                   label="Privacy Policy"
-                  onPress={handleComingSoon}
+                  onPress={() => router.push('/profile/privacy-policy')}
                 />
                 <View style={[styles.menuItemSeparator, themeStyles.menuItemSeparator]} />
                 <ProfileMenuItem
                   icon={FileText}
                   label="Terms of Service"
-                  onPress={handleComingSoon}
+                  onPress={() => router.push('/profile/terms-of-service')}
                 />
               </CardContent>
             </Card>
@@ -233,25 +228,6 @@ export default function ProfileScreen() {
 
         </ScrollView>
       </Animated.View>
-      
-      <Modal
-        visible={isComingSoonOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsComingSoonOpen(false)}
-      >
-        <View style={styles.comingSoonOverlay}>
-          <View style={[styles.comingSoonModal, themeStyles.comingSoonModal]}>
-            <Text style={[styles.comingSoonTitle, themeStyles.comingSoonTitle]}>Coming Soon!</Text>
-            <Text style={[styles.comingSoonDescription, themeStyles.comingSoonDescription]}>
-              This feature will be available in a future update.
-            </Text>
-            <Button onPress={() => setIsComingSoonOpen(false)}>
-              Got it
-            </Button>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -326,33 +302,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: typographyScale.bodySmall,
   },
-  comingSoonOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacingScale.lg,
-  },
-  comingSoonModal: {
-    borderRadius: 12,
-    padding: spacingScale.lg,
-    alignItems: 'center',
-    gap: spacingScale.md,
-    maxWidth: 320,
-    width: '100%',
-  },
-  comingSoonTitle: {
-    fontSize: typographyScale.title,
-    fontWeight: 'bold',
-  },
-  comingSoonDescription: {
-    fontSize: typographyScale.body,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  comingSoonButton: {
-    marginTop: spacingScale.sm,
-  },
   scrollView: {
     flex: 1,
   },
@@ -382,14 +331,5 @@ const createProfileThemeStyles = (colors: ThemeColors) => ({
   },
   logoutButtonText: {
     color: colors.text,
-  },
-  comingSoonModal: {
-    backgroundColor: colors.surface,
-  },
-  comingSoonTitle: {
-    color: colors.heading,
-  },
-  comingSoonDescription: {
-    color: colors.textMuted,
   },
 });
