@@ -100,7 +100,7 @@ export default function LoginScreen() {
           </Button>
 
           <View style={themedStyles.footer}>
-            <Text style={themedStyles.footerText}>Don't have an account? </Text>
+            <Text style={themedStyles.footerText}>Don’t have an account? </Text>
             <Button
               variant="link"
               onPress={() => router.push('/(auth)/signup')}

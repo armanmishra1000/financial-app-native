@@ -2,19 +2,22 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { EditProfileForm } from '../../src/components/edit-profile-form';
+import { useThemeColors } from '../../src/context';
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const themedStyles = React.useMemo(() => createStyles(colors), [colors]);
 
   const handleSuccess = () => {
     router.back();
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Edit Profile</Text>
-        <Text style={styles.subtitle}>Update your account information.</Text>
+    <ScrollView style={themedStyles.container} contentContainerStyle={themedStyles.content}>
+      <View style={themedStyles.header}>
+        <Text style={themedStyles.title}>Edit Profile</Text>
+        <Text style={themedStyles.subtitle}>Update your account information.</Text>
       </View>
         
       <EditProfileForm onSuccess={handleSuccess} />
@@ -22,25 +25,27 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 80,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-});
+const createStyles = (colors: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 80,
+    },
+    header: {
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 30,
+      fontWeight: 'bold',
+      color: colors.heading,
+    },
+    subtitle: {
+      fontSize: 18,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+  });
